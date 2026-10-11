@@ -1,0 +1,104 @@
+[
+  {
+    "package": "@tabler/core",
+    "version": "1.6.0",
+    "url": "https://registry.npmjs.org/@tabler/core/-/core-1.6.0.tgz",
+    "sha1": "fcc545fb3364ad62bee4c81856eced5a36cb2745",
+    "license": "MIT",
+    "files": [
+      {
+        "file": "tabler.min.css",
+        "bytes": 635234,
+        "sha256": "60bc8b4432e7778016e3675b79181f441fa617ac8b5387f8372a860cbb459a82"
+      },
+      {
+        "file": "tabler-LICENSE",
+        "bytes": 1087,
+        "sha256": "aa27791aaef56720cea8413a97785da2db7c6edd44240faf77d99bde6350be97"
+      }
+    ]
+  },
+  {
+    "package": "echarts",
+    "version": "6.1.0",
+    "url": "https://registry.npmjs.org/echarts/-/echarts-6.1.0.tgz",
+    "sha1": "ae0f68590f5ebbd728d900907c27acde7c5456d1",
+    "license": "Apache-2.0",
+    "files": [
+      {
+        "file": "echarts.min.js",
+        "bytes": 1121883,
+        "sha256": "b66b25aeb4df84e33199dc21694014d336d222cbd9deb0e5a7c14bd6aa0d0fd0"
+      },
+      {
+        "file": "echarts-LICENSE",
+        "bytes": 11990,
+        "sha256": "634293835b43a6dd2094fa39182a3d9a6b9ca43b7fdb9ac354e8037af2a3093a"
+      },
+      {
+        "file": "echarts-NOTICE",
+        "bytes": 168,
+        "sha256": "d491d358344f842685c1b1585970999db65fe30ecf7ef3867af8814f4016c016"
+      }
+    ]
+  },
+  {
+    "package": "frappe-gantt",
+    "version": "1.2.2",
+    "url": "https://registry.npmjs.org/frappe-gantt/-/frappe-gantt-1.2.2.tgz",
+    "sha1": "36bf15e74e179ac707341b663a49493a05a7fdf5",
+    "license": "MIT",
+    "files": [
+      {
+        "file": "frappe-gantt.umd.js",
+        "bytes": 48175,
+        "sha256": "f5b9de3b618b72e675dfa7f159f2091fcf2055e62826309dfc4604d7ca649e41"
+      },
+      {
+        "file": "frappe-gantt.css",
+        "bytes": 6848,
+        "sha256": "74ccfd2390849e729cda95a358439f003b79b94770ff732713217bc8045e7a69"
+      },
+      {
+        "file": "frappe-gantt-LICENSE",
+        "bytes": 1095,
+        "sha256": "f0ee9b1340ea287eacdc522f04f85b80304c2009c237809920ff9cf7684fc4f1"
+      }
+    ]
+  },
+  {
+    "source": "preview/pages/tables.astro",
+    "url": "https://raw.githubusercontent.com/tabler/tabler/6199b80b28ec3307112808993965c4974f0fc053/preview/pages/tables.astro",
+    "sha256": "2e6590d30fdfafce030ba7090a66279947e9b35c271999bc925bace3660a696b"
+  },
+  {
+    "source": "preview/pages/invoice.astro",
+    "url": "https://raw.githubusercontent.com/tabler/tabler/6199b80b28ec3307112808993965c4974f0fc053/preview/pages/invoice.astro",
+    "sha256": "f4ab74d7ca26e28025c96974df597431abecbc6dae658e8cabe386d1ab11377e"
+  },
+  {
+    "source": "preview/pages/dashboard-crm.astro",
+    "url": "https://raw.githubusercontent.com/tabler/tabler/6199b80b28ec3307112808993965c4974f0fc053/preview/pages/dashboard-crm.astro",
+    "sha256": "8c2fa8d046387224a7f3450c88e69f777c8a45d555f61a94754b2a76eae01e18"
+  },
+  {
+    "source": "shared/components/cards/ProjectKanban.astro",
+    "url": "https://raw.githubusercontent.com/tabler/tabler/6199b80b28ec3307112808993965c4974f0fc053/shared/components/cards/ProjectKanban.astro",
+    "sha256": "6d42f4c58d230982f340bff885b4c34bb082ebebedcf5405b149a83e2ec2c39d"
+  },
+  {
+    "source": "shared/components/cards/charts/SalesOverview.astro",
+    "url": "https://raw.githubusercontent.com/tabler/tabler/6199b80b28ec3307112808993965c4974f0fc053/shared/components/cards/charts/SalesOverview.astro",
+    "sha256": "4c4d5d499150fc3c481c94340c74828c46dd9c903a94bdb535ac839dc426d576"
+  },
+  {
+    "source": "shared/components/cards/charts/TrafficSources.astro",
+    "url": "https://raw.githubusercontent.com/tabler/tabler/6199b80b28ec3307112808993965c4974f0fc053/shared/components/cards/charts/TrafficSources.astro",
+    "sha256": "0cd95d962e0aa613f0291ce7d3e8e99c0250942de97a2b1b6c4e579609e67fa1"
+  },
+  {
+    "source": "shared/components/cards/charts/CryptoPrice.astro",
+    "url": "https://raw.githubusercontent.com/tabler/tabler/6199b80b28ec3307112808993965c4974f0fc053/shared/components/cards/charts/CryptoPrice.astro",
+    "sha256": "188dfd69c8aae34f49beab6489362111fa9bc4b59b6c0f8b1f1af9b89c9f4284"
+  }
+]

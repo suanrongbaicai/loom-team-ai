@@ -1,0 +1,14 @@
+{
+  "skills_repository": "https://github.com/antvis/chart-visualization-skills",
+  "skills_commit": "a105fa12a9fa41fccccc2eba7f4b34973628f5d3",
+  "skills": [
+    "antv-g2-chart",
+    "antv-gpt-vis"
+  ],
+  "renderer": "@antv/g2",
+  "renderer_version": "5.4.8",
+  "renderer_sha256": "7e7d346cab68c002a889dc6145bfc1f9ae1391be82ce8d514fb106ef3a6e6412",
+  "license": "MIT",
+  "network": "local fixed renderer; no business upload/CDN",
+  "gpt_vis": "official skill retained; current fixed-slot renderer uses G2, not a claim of all 26 charts being wired"
+}

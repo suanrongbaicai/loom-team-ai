@@ -1,0 +1,21 @@
+{
+  "version": "3-antv-g2-5.4.8-axis-readable",
+  "interactive_engine": "AntV G2 5.4.8; local/offline HTML with native tooltip and category legend filtering",
+  "official_skills": ["antv-gpt-vis", "antv-g2-chart"],
+  "delivery": {"html":"完整可交互原件，需可执行HTML的浏览器；不是公网分享地址", "docx":"飞书原生文档，含静态图与明细，无网页交互", "sheet":"飞书原生电子表格，可阅读及编辑单元格"},
+  "selection_sources": ["https://github.com/Financial-Times/chart-doctor/tree/main/visual-vocabulary", "https://www.data-to-viz.com/"],
+  "templates": [
+    {"id":"table","name":"清晰明细表","question":"查具体值、核对或共同编辑","reference":"https://preview.tabler.io/tables.html","slots":[],"mobile":"逐条卡片；原表保留横向浏览"},
+    {"id":"brief","name":"事项简报","question":"读结论、经过和下一步","reference":"https://preview.tabler.io/invoice.html","slots":["label","value"],"mobile":"单列报告卡片"},
+    {"id":"comparison","name":"比较与排名","question":"谁多谁少、差距多少","reference":"https://preview.tabler.io/charts.html","slots":["label","value"],"mobile":"横向条形图与短明细"},
+    {"id":"trend","name":"时间趋势","question":"同一口径随时间怎样变化","reference":"https://preview.tabler.io/dashboard-crm.html","slots":["x","value"],"mobile":"宽度自适应；缺值断开"},
+    {"id":"composition","name":"构成与占比","question":"同一个整体由什么组成","reference":"https://preview.tabler.io/charts.html","slots":["label","value"],"mobile":"环图配直接标数的图例；类别多时改条形"},
+    {"id":"distribution","name":"分布","question":"数值集中在哪、差异多大","reference":"https://echarts.apache.org/examples/en/editor.html?c=bar-simple","slots":["value"],"mobile":"等宽分箱与区间、计数明细"},
+    {"id":"relationship","name":"关系与异常","question":"两个数值有何关系","reference":"https://echarts.apache.org/examples/en/editor.html?c=scatter-simple","slots":["x","y","label"],"mobile":"散点配精确数值；不把相关说成因果"},
+    {"id":"matrix","name":"交叉热力表","question":"两个分类交叉后的数量或强弱","reference":"https://echarts.apache.org/examples/en/editor.html?c=heatmap-cartesian","slots":["x","y","value"],"mobile":"有限分类，附原值明细"},
+    {"id":"waterfall","name":"增减拆解","question":"起点经各项增减如何到终点","reference":"https://echarts.apache.org/examples/en/editor.html?c=bar-waterfall2","slots":["label","value"],"mobile":"只接受同单位有正负的增减值；终值由程序计算"},
+    {"id":"gantt","name":"项目排期","question":"谁在何时做什么","reference":"https://github.com/frappe/gantt","slots":["label","start","end"],"mobile":"任务卡片显示完整起止日期；电脑版显示时间轴"},
+    {"id":"kanban","name":"工作看板","question":"事项分别停在哪个阶段","reference":"https://github.com/tabler/tabler/blob/6199b80b28ec3307112808993965c4974f0fc053/shared/components/cards/ProjectKanban.astro","slots":["label","status"],"mobile":"各阶段纵向排列，不挤成小字三列"},
+    {"id":"candlestick","name":"区间蜡烛图","question":"每期的开、高、低、收","reference":"https://preview.tabler.io/dashboard-crypto.html","slots":["x","open","close","low","high"],"mobile":"少量时期配明细；仅真实具备四值时适用"}
+  ]
+}

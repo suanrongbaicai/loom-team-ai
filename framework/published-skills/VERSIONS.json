@@ -1,0 +1,66 @@
+{
+  "meaning": "Published method snapshots; default framework skill files remain separately available. Host deployment selects the approved version.",
+  "skills": [
+    {
+      "skill": "anc-business",
+      "version": "v1",
+      "framework_identical": false,
+      "registered_digest_verified": true
+    },
+    {
+      "skill": "anc-capabilities",
+      "version": "v1",
+      "framework_identical": false,
+      "registered_digest_verified": true
+    },
+    {
+      "skill": "anc-customer-profile",
+      "version": "v1",
+      "framework_identical": false,
+      "registered_digest_verified": true
+    },
+    {
+      "skill": "anc-onboard",
+      "version": "v2",
+      "framework_identical": false,
+      "registered_digest_verified": true
+    },
+    {
+      "skill": "anc-people",
+      "version": "v1",
+      "framework_identical": false,
+      "registered_digest_verified": false,
+      "public_example_adapted": true
+    },
+    {
+      "skill": "anc-reports",
+      "version": "v11-report-build",
+      "framework_identical": true,
+      "registered_digest_verified": true
+    },
+    {
+      "skill": "anc-wechat",
+      "version": "v4-senders-video-frames",
+      "framework_identical": false,
+      "registered_digest_verified": true
+    },
+    {
+      "skill": "anc-work-records",
+      "version": "v10-navigation-links",
+      "framework_identical": false,
+      "registered_digest_verified": true
+    },
+    {
+      "skill": "antv-g2-chart",
+      "version": "v1-a105fa1",
+      "framework_identical": false,
+      "registered_digest_verified": true
+    },
+    {
+      "skill": "antv-gpt-vis",
+      "version": "v1-a105fa1",
+      "framework_identical": false,
+      "registered_digest_verified": true
+    }
+  ]
+}

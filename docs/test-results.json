@@ -1,0 +1,116 @@
+{
+  "mode": "full",
+  "python": "3.13.13",
+  "platform": "win32",
+  "tests": 986,
+  "passed": 960,
+  "failures": [],
+  "errors": [],
+  "skipped": [
+    {
+      "test": "test_parent_crash_closes_contained_host_without_model_call (tests.test_appserver_lifetime.LifetimeTests.test_parent_crash_closes_contained_host_without_model_call)",
+      "reason": "opt-in Windows offline test"
+    },
+    {
+      "test": "test_scheduler_real_host_overlap_tools_cancel_and_crash_no_replay (tests.test_appserver_offline.RealAppServerTests.test_scheduler_real_host_overlap_tools_cancel_and_crash_no_replay)",
+      "reason": "real offline CLI test is opt-in"
+    },
+    {
+      "test": "test_no_native_environment_or_provisioning_and_dynamic_tool_still_works (tests.test_appserver_permissions.PermissionsTests.test_no_native_environment_or_provisioning_and_dynamic_tool_still_works)",
+      "reason": "real offline CLI test is opt-in"
+    },
+    {
+      "test": "test_abrupt_process_exit_retains_original_and_unknown_send (tests.test_database_lifetime.DatabaseLifetimeTests.test_abrupt_process_exit_retains_original_and_unknown_send)",
+      "reason": "Optimization remains off on older SQLite"
+    },
+    {
+      "test": "test_file_commit_failure_boundaries (tests.test_database_lifetime.DatabaseLifetimeTests.test_file_commit_failure_boundaries)",
+      "reason": "Optimization remains off on older SQLite"
+    },
+    {
+      "test": "test_revocation_still_invalidates_loaded_context (tests.test_database_lifetime.DatabaseLifetimeTests.test_revocation_still_invalidates_loaded_context)",
+      "reason": "Optimization remains off on older SQLite"
+    },
+    {
+      "test": "test_unknown_send_still_cannot_retry (tests.test_database_lifetime.DatabaseLifetimeTests.test_unknown_send_still_cannot_retry)",
+      "reason": "Optimization remains off on older SQLite"
+    },
+    {
+      "test": "test_links_in_either_tree_are_refused (tests.test_deploy_update.DeployTests.test_links_in_either_tree_are_refused)",
+      "reason": "symlink not available"
+    },
+    {
+      "test": "test_links_in_either_tree_are_refused (tests.test_deploy_update.RollbackOrderTests.test_links_in_either_tree_are_refused)",
+      "reason": "symlink not available"
+    },
+    {
+      "test": "test_links_in_either_tree_are_refused (tests.test_deploy_update.SchemaRollbackTests.test_links_in_either_tree_are_refused)",
+      "reason": "symlink not available"
+    },
+    {
+      "test": "test_a_link_at_a_package_entry_point_or_on_the_package_path_is_refused (tests.test_factory.FactoryTests.test_a_link_at_a_package_entry_point_or_on_the_package_path_is_refused)",
+      "reason": "symlink not available"
+    },
+    {
+      "test": "test_links_are_refused_in_the_source_the_output_and_the_package (tests.test_factory.FactoryTests.test_links_are_refused_in_the_source_the_output_and_the_package)",
+      "reason": "symlink not available"
+    },
+    {
+      "test": "test_a_link_on_any_target_path_is_refused (tests.test_provision.ProvisionTests.test_a_link_on_any_target_path_is_refused)",
+      "reason": "symlink not available"
+    },
+    {
+      "test": "test_a_copy_root_that_is_a_link_to_the_production_root_is_refused_before_construction (tests.test_purge_test_data.PurgeTests.test_a_copy_root_that_is_a_link_to_the_production_root_is_refused_before_construction)",
+      "reason": "Windows symlink privilege unavailable"
+    },
+    {
+      "test": "test_a_link_anywhere_in_the_ancestor_chain_of_any_root_is_refused (tests.test_purge_test_data.PurgeTests.test_a_link_anywhere_in_the_ancestor_chain_of_any_root_is_refused)",
+      "reason": "Windows symlink privilege unavailable"
+    },
+    {
+      "test": "test_a_link_inside_a_selected_directory_tree_is_refused_not_entered (tests.test_purge_test_data.PurgeTests.test_a_link_inside_a_selected_directory_tree_is_refused_not_entered)",
+      "reason": "Windows symlink privilege unavailable"
+    },
+    {
+      "test": "test_a_linked_path_component_is_refused (tests.test_purge_test_data.PurgeTests.test_a_linked_path_component_is_refused)",
+      "reason": "Windows symlink privilege unavailable"
+    },
+    {
+      "test": "test_a_write_root_that_resolves_into_production_is_refused_and_a_late_link_cannot_redirect_receipts (tests.test_purge_test_data.PurgeTests.test_a_write_root_that_resolves_into_production_is_refused_and_a_late_link_cannot_redirect_receipts)",
+      "reason": "Windows symlink privilege unavailable"
+    },
+    {
+      "test": "test_an_alias_inside_the_root_pointing_at_a_real_directory_is_refused_by_name_not_resolved_away (tests.test_purge_test_data.PurgeTests.test_an_alias_inside_the_root_pointing_at_a_real_directory_is_refused_by_name_not_resolved_away)",
+      "reason": "Windows symlink privilege unavailable"
+    },
+    {
+      "test": "test_linked_path_components_are_refused_before_any_change (tests.test_skills_switch.LinkTests.test_linked_path_components_are_refused_before_any_change)",
+      "reason": "Windows symlink privilege unavailable"
+    },
+    {
+      "test": "test_linked_work_directory_is_refused (tests.test_skills_switch.LinkTests.test_linked_work_directory_is_refused)",
+      "reason": "Windows symlink privilege unavailable"
+    },
+    {
+      "test": "test_invalid_index_and_linked_media_rejected (tests.test_wechat_attachments.AttachmentTests.test_invalid_index_and_linked_media_rejected)",
+      "reason": "Symlink creation unavailable"
+    },
+    {
+      "test": "test_a_link_made_after_planning_is_caught_and_cli_codes (tests.test_wipe_rebuild.WipeTests.test_a_link_made_after_planning_is_caught_and_cli_codes)",
+      "reason": "symlink not available"
+    },
+    {
+      "test": "test_a_linked_database_is_refused_before_it_is_read (tests.test_wipe_rebuild.WipeTests.test_a_linked_database_is_refused_before_it_is_read)",
+      "reason": "symlink not available"
+    },
+    {
+      "test": "test_links_protected_names_and_outside_roots_are_refused (tests.test_wipe_rebuild.WipeTests.test_links_protected_names_and_outside_roots_are_refused)",
+      "reason": "symlink not available"
+    }
+  ],
+  "expected_failures": [
+    "test_test_marking_marks_only_prefixed_messages_in_listed_scopes_and_only_once (tests.test_test_marking.TestMarkingTests.test_test_marking_marks_only_prefixed_messages_in_listed_scopes_and_only_once)"
+  ],
+  "unexpected_successes": [],
+  "external_network_blocked_in_runner": true
+}

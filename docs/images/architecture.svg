@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="570" viewBox="0 0 1120 570" role="img" aria-labelledby="title desc">
+<title id="title">Loom 工作与记录架构</title><desc id="desc">获准输入经过可信身份和任务调度到模型，再调用受控工具；三层记录保存依据，已保存回复经过权限核对后发送，回执写回记录。</desc>
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8" fill="#526179"/></marker>
+<style>text{font-family:system-ui,'Microsoft YaHei',sans-serif;fill:#182537} .box{fill:#fff;stroke:#ccd6e3;stroke-width:1.5} .title{font-size:18px;font-weight:600} .sub{font-size:14px;fill:#536479} .line{fill:none;stroke:#526179;stroke-width:2;marker-end:url(#arrow)} .record{fill:#eef5ff;stroke:#88abd5;stroke-width:1.5}</style></defs>
+<rect width="1120" height="570" rx="18" fill="#f5f7fa"/>
+<text x="36" y="46" font-size="25" font-weight="650">Loom：把事情接着做，并留下依据</text>
+<text x="36" y="73" class="sub">模型判断语义；可信宿主核验身份、权限、版本和实际动作。</text>
+<g transform="translate(36,116)"><rect class="box" width="168" height="88" rx="12"/><text x="18" y="35" class="title">获准输入</text><text x="18" y="61" class="sub">平台 / 本地 mock</text></g>
+<g transform="translate(248,116)"><rect class="box" width="168" height="88" rx="12"/><text x="18" y="35" class="title">身份与任务</text><text x="18" y="61" class="sub">bot / 受众 / 调度</text></g>
+<g transform="translate(460,116)"><rect class="box" width="168" height="88" rx="12"/><text x="18" y="35" class="title">模型提供方</text><text x="18" y="61" class="sub">任务 / MockModel</text></g>
+<g transform="translate(672,116)"><rect class="box" width="168" height="88" rx="12"/><text x="18" y="35" class="title">受控工具</text><text x="18" y="61" class="sub">范围 / 版本 / 记录</text></g>
+<path class="line" d="M204 160H242"/><path class="line" d="M416 160H454"/><path class="line" d="M628 160H666"/>
+<g transform="translate(894,112)"><rect class="record" width="192" height="72" rx="10"/><text x="16" y="30" class="title">Data</text><text x="16" y="53" class="sub">原件、动作与真实结果</text></g>
+<g transform="translate(894,204)"><rect class="record" width="192" height="72" rx="10"/><text x="16" y="30" class="title">CL</text><text x="16" y="53" class="sub">事项经过与逐次引用</text></g>
+<g transform="translate(894,296)"><rect class="record" width="192" height="72" rx="10"/><text x="16" y="30" class="title">Context</text><text x="16" y="53" class="sub">有来源的当前认识</text></g>
+<path class="line" d="M840 151H888"/><path class="line" d="M840 160H865V240H888"/><path class="line" d="M840 174H852V332H888"/>
+<g transform="translate(672,292)"><rect class="box" width="168" height="88" rx="12"/><text x="18" y="35" class="title">已保存回复</text><text x="18" y="61" class="sub">outbox / 稳定编号</text></g>
+<path class="line" d="M756 204V286"/>
+<g transform="translate(460,292)"><rect class="box" width="168" height="88" rx="12"/><text x="18" y="35" class="title">发送前复核</text><text x="18" y="61" class="sub">当前权限与记录版本</text></g>
+<g transform="translate(248,292)"><rect class="box" width="168" height="88" rx="12"/><text x="18" y="35" class="title">实际发送</text><text x="18" y="61" class="sub">平台 / MockTransport</text></g>
+<g transform="translate(36,292)"><rect class="box" width="168" height="88" rx="12"/><text x="18" y="35" class="title">核对回执</text><text x="18" y="61" class="sub">sent / failed / unknown</text></g>
+<path class="line" d="M672 336H634"/><path class="line" d="M460 336H422"/><path class="line" d="M248 336H210"/>
+<path class="line" d="M120 380V424H1098V148H1092"/><text x="398" y="449" class="sub">真实结果写回；unknown 保留，不自动重发</text>
+<rect x="36" y="482" width="1050" height="54" rx="10" fill="#e8edf4"/><text x="54" y="514" class="sub">本地演示：合成资料与固定 mock。真实平台、模型和团队共享需另外配置与验收。</text>
+</svg>

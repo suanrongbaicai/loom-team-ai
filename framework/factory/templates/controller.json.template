@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "deployment_approval": "<写明批准人、日期和范围的批准依据>",
+  "control_root": "<已创建 runtime.sqlite 的受保护控制目录绝对路径>",
+  "runtime": {
+    "framework": "<框架目录绝对路径>",
+    "python": "<Python 可执行文件绝对路径>",
+    "codex": "<官方 Codex 可执行文件绝对路径>",
+    "endpoint": "http://127.0.0.1:<控制器端口>/rpc",
+    "proxy": null,
+    "credentials": "<工作账号凭据文件的绝对路径（launch-job.ps1 的 CredentialFile，是文件不是目录）>",
+    "headless": true,
+    "model_http_only": true,
+    "model_catalog_json": "<模型目录文件绝对路径>"
+  },
+  "transport_secret_file": "<控制器与网关共用的传输密钥文件，至少 32 字符>",
+  "accepted_chats": [],
+  "apps": {
+    "<飞书应用 id>": {
+      "credential_file": "<该应用凭据文件，内含 app_id 与 app_secret>",
+      "transport": "official-feishu",
+      "proxy": null
+    }
+  },
+  "scopes": {
+    "<scope 名，须与 policy 中的 scopes 一致>": {
+      "worker_home": "<该 scope 工作账号的工作目录>",
+      "os_account": "<独立 Windows 工作账号>",
+      "jobs": "<该 scope 的任务目录>"
+    }
+  },
+  "wechat_capture": {"enabled": false},
+  "capabilities": {"enabled": false},
+  "reports": {"enabled": false},
+  "public_web": {"enabled": false},
+  "personnel_notices": {"enabled": false}
+}

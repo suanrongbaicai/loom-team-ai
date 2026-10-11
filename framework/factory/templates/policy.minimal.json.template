@@ -1,0 +1,29 @@
+{
+  "epoch": 0,
+  "roster_version": 0,
+  "governance_confirmed": false,
+  "members": {
+    "<成员 id>": {
+      "active": true,
+      "verified": true,
+      "team_member": false,
+      "roles": [],
+      "bindings": [{"platform": "feishu", "tenant": "<企业 id>", "app": "<应用 id>", "account": "<平台账号 id>", "evidence": "<核验依据>"}]
+    }
+  },
+  "apps": {"<应用 id>": {"open_id": "<该应用机器人 open_id>"}},
+  "scopes": {
+    "<scope 名>": {
+      "kind": "private",
+      "participants": ["<成员 id>"],
+      "membership_verified": true,
+      "root": "<该 scope 记录根，须在控制目录之下>",
+      "personnel_file": "<该 scope 人员与权限文件路径>",
+      "transport": {"tenant": "<企业 id>", "apps": ["<应用 id>"], "chat": "<会话 id>"}
+    }
+  },
+  "grants": [],
+  "wechat_sources": {},
+  "wechat_captures": {},
+  "wechat_accounts": {}
+}

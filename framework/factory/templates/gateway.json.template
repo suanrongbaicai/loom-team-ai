@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "deployment_approval": "<批准依据>",
+  "app_id": "<飞书应用 id>",
+  "dependencies_root": "<已核验的 SDK 依赖目录，不得是链接>",
+  "credential_file": "<该应用凭据文件>",
+  "inbox_root": "<该网关独立的收件箱目录>",
+  "transport_secret_file": "<与控制器相同的传输密钥文件>",
+  "allowed_chats": [["<企业 tenant_key>", "<会话 chat_id>"]],
+  "controller_ingress": "http://127.0.0.1:<控制器本机端口>/ingress",
+  "proxy": null
+}
