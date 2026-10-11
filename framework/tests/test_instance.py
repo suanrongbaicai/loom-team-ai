@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from anc.instance import InstanceLock
+from loom.instance import InstanceLock
 
 
 class InstanceTests(unittest.TestCase):
@@ -12,7 +12,7 @@ class InstanceTests(unittest.TestCase):
         Path('.test-work').mkdir(exist_ok=True)
         with tempfile.TemporaryDirectory(dir='.test-work') as folder:
             path = str(Path(folder, 'controller.lock').absolute())
-            code = ('from anc.instance import InstanceLock,InstanceBusy\n'
+            code = ('from loom.instance import InstanceLock,InstanceBusy\n'
                     'import sys\n'
                     'try:\n'
                     ' with InstanceLock(sys.argv[1]): pass\n'
@@ -21,7 +21,7 @@ class InstanceTests(unittest.TestCase):
                 result = subprocess.run([sys.executable, '-B', '-c', code, path], capture_output=True)
                 self.assertEqual(result.returncode, 23, result.stderr)
             child = subprocess.Popen([sys.executable, '-B', '-c',
-                                      'from anc.instance import InstanceLock; import sys,time; '
+                                      'from loom.instance import InstanceLock; import sys,time; '
                                       'lock=InstanceLock(sys.argv[1]); lock.__enter__(); '
                                       'print("locked",flush=True); time.sleep(30)', path], stdout=subprocess.PIPE)
             try:

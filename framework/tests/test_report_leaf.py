@@ -4,10 +4,10 @@ from pathlib import Path
 import unittest
 from unittest.mock import patch
 
-from anc.policy import Denied
-from anc.report_leaf import ReportLeaf,sheet_values,sheet_diff
-from anc.report_templates import validate,metrics,render
-from anc.feishu_reports import CloudReports,CloudFailure
+from loom.policy import Denied
+from loom.report_leaf import ReportLeaf,sheet_values,sheet_diff
+from loom.report_templates import validate,metrics,render
+from loom.feishu_reports import CloudReports,CloudFailure
 from tests.test_control import ControlTests,grant
 
 
@@ -93,22 +93,22 @@ class ReportLeafTests(unittest.TestCase):
         self.assertEqual(out['state'],'unknown');self.assertEqual(len(self.fake.calls),1)
 
     def test_native_units_and_legacy_import_keep_their_recorded_header(self):
-        rid=self.setup_report();self.assertEqual(sheet_values(self.spec)[0],['_anc_row_id','编号','金额 / 元'])
-        original=sheet_values(self.spec);original[0]=['_anc_row_id','编号','金额']
-        with patch('anc.feishu_reports.sheet_values',return_value=original):
+        rid=self.setup_report();self.assertEqual(sheet_values(self.spec)[0],['_loom_row_id','编号','金额 / 元'])
+        original=sheet_values(self.spec);original[0]=['_loom_row_id','编号','金额']
+        with patch('loom.feishu_reports.sheet_values',return_value=original):
             out=self.cloud.publish(self.a,'legacy',rid,'sheet',lambda:True)
         self.assertEqual(self.cloud.import_sheet(self.a,out['publication'],lambda:True)['diff']['changes'],[])
         self.fake.values[0][2]='金额 / 美元'
         self.assertEqual(self.cloud.import_sheet(self.a,out['publication'],lambda:True)['state'],'needs_review')
 
     def test_legacy_interrupted_publish_resumes_saved_content_after_unit_upgrade(self):
-        rid=self.setup_report();old=sheet_values(self.spec);old[0]=['_anc_row_id','编号','金额']
+        rid=self.setup_report();old=sheet_values(self.spec);old[0]=['_loom_row_id','编号','金额']
         original=self.fake;failed=[]
         def temporary(client,method,path,body=None,upload=None):
             if path.endswith('/style') and not failed:failed.append(True);raise CloudFailure(99991672)
             return original(client,method,path,body,upload)
         self.cloud.fetch=temporary
-        with patch('anc.feishu_reports.sheet_values',return_value=old):
+        with patch('loom.feishu_reports.sheet_values',return_value=old):
             with self.assertRaises(CloudFailure):self.cloud.publish(self.a,'legacy',rid,'sheet',lambda:True)
         self.assertEqual(self.cloud.publish(self.a,'legacy',rid,'sheet',lambda:True)['state'],'published')
         self.assertEqual(self.fake.values[0],old[0])
@@ -143,12 +143,12 @@ class ReportLeafTests(unittest.TestCase):
         self.assertEqual(result['state'],'needs_review');self.assertTrue(result['original'])
 
     def test_rpc_rule_gate_and_cloud_action_originals(self):
-        from anc.rpc import RuntimeAPI
-        from anc.skills import Skills
+        from loom.rpc import RuntimeAPI
+        from loom.skills import Skills
         rid=self.setup_report();api=RuntimeAPI(self.c,Path.cwd(),b'x'*32,report_leaf=self.leaf,cloud_reports=self.cloud)
         token=api.issue(self.a)
         with self.assertRaises(Denied):api.call(token,'report_templates',{})
-        for name in ('anc-work-records','anc-onboard','anc-reports'):
+        for name in ('loom-work-records','loom-onboard','loom-reports'):
             Skills(self.c).publish(name,'v1',Path('skills')/name,'fixture');Skills(self.c).deploy(self.a.scope,name,'v1',self.root/'work')
         api.rules.load(self.a,'SessionStart','report-test')
         self.assertEqual(len(api.call(token,'report_templates',{})['templates']),12)
@@ -173,7 +173,7 @@ class ReportLeafTests(unittest.TestCase):
     def test_interrupted_material_storage_can_resume(self):
         self.setup_report();spec=copy.deepcopy(self.spec);spec['template']='comparison';spec['view']={'label':'code','value':'amount'}
         fake={'title':'比较','svg':'<svg>chart</svg>','svg_mobile':'<svg>mobile</svg>','png':None}
-        from anc import report_leaf
+        from loom import report_leaf
         original=report_leaf.retain
         def fail(c,ctx,source,part,*args):
             if part=='chart-svg':raise OSError('simulated disk failure')
@@ -185,7 +185,7 @@ class ReportLeafTests(unittest.TestCase):
         self.assertEqual(set(result['originals']),{'report-html','chart-svg','chart-svg-mobile'})
 
     def test_native_reading_copy_has_totals_and_deduplicated_evidence(self):
-        from anc.feishu_reports import native_blocks
+        from loom.feishu_reports import native_blocks
         self.setup_report();blocks=native_blocks(self.spec)
         text='\n'.join(e['text_run']['content'] for b in blocks for e in b.get('text',b.get('heading2',{})).get('elements',[]))
         self.assertIn('金额：30 元（已知 1 项，另有 1 项未提供）',text)
@@ -194,8 +194,8 @@ class ReportLeafTests(unittest.TestCase):
 
     def test_cloud_copy_keeps_full_file_and_checks_real_source_and_audience(self):
         import io,zipfile
-        from anc.cloud_copy import CloudCopy
-        from anc.originals import get
+        from loom.cloud_copy import CloudCopy
+        from loom.originals import get
         report=self.setup_report();url='https://example.feishu.cn/docx/ActualFile1234567890'
         self.record(self.a,key='cloud-message',kind='data',text=json.dumps({'sender':'alice','content':url}))
         with self.c.db.transaction() as db:db.execute('INSERT INTO messages VALUES(?,?,?,?,?,?)',('message-id','feishu','team','chat-a','platform-id','cloud-message'))

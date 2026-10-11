@@ -3,10 +3,10 @@ import json
 import tempfile
 import unittest
 
-from anc.control import Control
-from anc.governance import Governance
-from anc.policy import Denied
-from anc.skills import Skills, tree_digest
+from loom.control import Control
+from loom.governance import Governance
+from loom.policy import Denied
+from loom.skills import Skills, tree_digest
 from tests.test_control import fixture
 
 

@@ -1,10 +1,10 @@
 import json
 from pathlib import Path
 import unittest
-from anc.control import Control
-from anc.platform_decisions import apply_confirmed
-from anc.platform_tasks import progress
-from anc.policy import Denied
+from loom.control import Control
+from loom.platform_decisions import apply_confirmed
+from loom.platform_tasks import progress
+from loom.policy import Denied
 from tests import test_platform_decisions as fixtures
 
 
@@ -40,7 +40,7 @@ class HumanWorkflowTests(unittest.TestCase):
         receipt = self.show()
         replies = self.read_replies(self.api.accept(self.envelope('alice', 'show', '待确认事项'))['task'])
         self.assertTrue(any('请使用飞书的“回复”功能' in text for _, text in replies))
-        self.assertFalse(any('"voters"' in text or '/anc-vote' in text for _, text in replies))
+        self.assertFalse(any('"voters"' in text or '/loom-vote' in text for _, text in replies))
         self.assertNotIn('human_decision', self.api.accept(self.envelope('alice', 'ordinary', '同意')))
         self.assertNotIn('human_decision', self.quote('alice', 'fake-parent', '同意', 'not-sent'))
         for actor in ('alice', 'bob', 'carol'):
@@ -61,7 +61,7 @@ class HumanWorkflowTests(unittest.TestCase):
 
     def test_approved_patch_auto_applies_once_and_survives_restart(self):
         created = self.api.accept(self.envelope('alice', 'create-source', '请准备一个测试提案'))['task']
-        from anc.human_messages import context
+        from loom.human_messages import context
         self.proposal = self.g.propose(context(self.c, created), {'title': '结束临时交接', 'policy_patch': {'handoff_rules': []}})
         receipt = self.show()
         for actor in ('alice', 'bob', 'carol'):

@@ -2,11 +2,11 @@ import json
 import unittest
 from unittest.mock import patch,Mock
 
-from anc.public_web import PublicWeb, PageText, parse_mcp, source_footer
-from anc.capability_network import request,PublicRoute,tls_socket
-from anc.originals import get
-from anc.policy import Denied
-from anc.references import passage
+from loom.public_web import PublicWeb, PageText, parse_mcp, source_footer
+from loom.capability_network import request,PublicRoute,tls_socket
+from loom.originals import get
+from loom.policy import Denied
+from loom.references import passage
 from tests import test_recording as fixture
 
 
@@ -94,7 +94,7 @@ class PublicWebTests(unittest.TestCase):
     def test_new_conversation_saved_web_source_still_labeled_as_network(self):
         self.setup_web();r=self.api.call(self.token,'web_search',self.args())
         # A new process must accept the registered table and retained rows.
-        from anc.control import Control
+        from loom.control import Control
         self.c=Control(self.c.root)
         later=self.c.task(self.ctx.principal,self.ctx.scope);self.c.read(later,r['id'])
         d=self.declaration();d['basis']=[r['id']]
@@ -140,7 +140,7 @@ class PublicNetworkTests(unittest.TestCase):
         response.getheader.side_effect=lambda key,*args: 'https://internal.example/path' if key=='Location' else ''
         connection=Mock();connection.getresponse.return_value=response
         dns=[[(2,1,6,'',('93.184.216.34',443))],[(2,1,6,'',('127.0.0.1',443))]]
-        with patch('socket.getaddrinfo',side_effect=dns),patch('anc.capability_network.tls_socket') as connect,patch('http.client.HTTPSConnection',return_value=connection):
+        with patch('socket.getaddrinfo',side_effect=dns),patch('loom.capability_network.tls_socket') as connect,patch('http.client.HTTPSConnection',return_value=connection):
             with self.assertRaises(Denied):request({'url':'https://example.com/'},lambda:None,follow_redirects=3)
             self.assertEqual(connect.call_count,1)
             headers=connection.request.call_args.kwargs['headers']
@@ -149,7 +149,7 @@ class PublicNetworkTests(unittest.TestCase):
     def test_existing_approved_fixed_request_still_does_not_follow_redirect(self):
         response=Mock(status=302);response.getheader.return_value='https://other.example/'
         connection=Mock();connection.getresponse.return_value=response
-        with patch('socket.getaddrinfo',return_value=[(2,1,6,'',('93.184.216.34',443))]),patch('anc.capability_network.tls_socket'),patch('http.client.HTTPSConnection',return_value=connection):
+        with patch('socket.getaddrinfo',return_value=[(2,1,6,'',('93.184.216.34',443))]),patch('loom.capability_network.tls_socket'),patch('http.client.HTTPSConnection',return_value=connection):
             with self.assertRaises(Denied):request({'url':'https://example.com/'},lambda:None)
 
     def test_search_does_not_treat_raw_tool_error_or_empty_content_as_results(self):
@@ -161,7 +161,7 @@ class PublicNetworkTests(unittest.TestCase):
         bodies=[{'Status':0,'Question':[{'name':'example.com.','type':1}],'Answer':[{'type':1,'data':'127.0.0.1'}]},
                 {'Status':0,'Question':[{'name':'wrong.example','type':1}],'Answer':[{'type':1,'data':'93.184.216.34'}]}]
         response=Mock(status=200);client=Mock();client.getresponse.return_value=response
-        with patch('anc.capability_network.tls_socket') as dial,patch('http.client.HTTPSConnection',return_value=client):
+        with patch('loom.capability_network.tls_socket') as dial,patch('http.client.HTTPSConnection',return_value=client):
             for body in bodies:
                 response.read.return_value=json.dumps(body).encode()
                 with self.assertRaises(Denied):route.resolve('example.com',lambda:None)

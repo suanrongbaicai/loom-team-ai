@@ -2,9 +2,9 @@ import base64
 import json
 from pathlib import Path
 import unittest
-from anc.images import Images
-from anc.mcp import handle
-from anc.policy import Denied
+from loom.images import Images
+from loom.mcp import handle
+from loom.policy import Denied
 from tests import test_runtime as fixtures
 
 PNG = base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jXs0AAAAASUVORK5CYII=')
@@ -52,7 +52,7 @@ class ImageBatchTests(unittest.TestCase):
         images=Images(self.c,{'app-alice':client})
         first=images.file(self.ctx,source);self.assertFalse(first['decoded'])
         self.assertEqual(images.file(self.ctx,source),first);self.assertEqual(len(requests),1)
-        from anc.originals import get
+        from loom.originals import get
         self.assertEqual(get(self.c,self.ctx,first['original'])[1],b'%PDF-original\x00\xff')
 
     def test_unreadable_image_and_invented_path_never_download(self):

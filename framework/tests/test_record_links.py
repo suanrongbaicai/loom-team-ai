@@ -2,10 +2,10 @@ import json
 import unittest
 from pathlib import Path
 
-from anc.control import Control, Conflict, digest
-from anc.policy import Denied
-from anc.references import passage, occurrences, rebuild, counts, impact
-from anc.originals import retain, get, find
+from loom.control import Control, Conflict, digest
+from loom.policy import Denied
+from loom.references import passage, occurrences, rebuild, counts, impact
+from loom.originals import retain, get, find
 from tests import test_recording as fixture
 
 
@@ -112,7 +112,7 @@ class RecordLinksTests(unittest.TestCase):
         whole=impact(self.c,self.ctx,'budget')
         self.assertEqual(len(whole['may_be_affected']),5);self.assertIsNone(whole['next_after'])
         seen=[];cursor=0;calls=0
-        with patch('anc.references.IMPACT_ROWS',2):
+        with patch('loom.references.IMPACT_ROWS',2):
             while True:
                 page=impact(self.c,self.ctx,'budget',after=cursor,limit=2);calls+=1
                 self.assertLessEqual(page['walked'],2)
@@ -124,7 +124,7 @@ class RecordLinksTests(unittest.TestCase):
         self.assertEqual(len(set(seen)),5)
 
     def test_impact_queries_use_indexes_not_whole_history_scans(self):
-        from anc import references
+        from loom import references
         self.five_replies()
         statements=[]
         with self.c.db.transaction() as db:
@@ -280,7 +280,7 @@ class RecordLinksTests(unittest.TestCase):
         with self.assertRaises(Denied):get(self.c,bob,key,with_reference=True)
 
     def test_saved_action_original_is_accessible_through_verified_receipt_only(self):
-        from anc.record_actions import read
+        from loom.record_actions import read
         token=self.ready();self.source();self.cite()
         r=self.declaration();r['events']=['activity'];r['basis']=['budget']
         r['event']={'state':'updated','reason':'记录依据','commits':['use-one']}

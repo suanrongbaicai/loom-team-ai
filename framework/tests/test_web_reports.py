@@ -5,9 +5,9 @@ import unittest
 from pathlib import Path
 from datetime import datetime,timezone
 
-from anc.web_reports import WebReports,WebUnavailable,grant_deadline
-from anc.policy import Denied,Policy,Resource,Context
-from anc.control import digest
+from loom.web_reports import WebReports,WebUnavailable,grant_deadline
+from loom.policy import Denied,Policy,Resource,Context
+from loom.control import digest
 
 
 class MemoryPublisher:
@@ -40,7 +40,7 @@ class WebReportsTests(unittest.TestCase):
         reused=self.publish();self.assertTrue(reused['reused'])
         for key,value in out.items(): self.assertEqual(reused[key],value)
         self.assertEqual(self.publisher.puts,1)
-        from anc.originals import find,get
+        from loom.originals import find,get
         originals=[get(self.p.c,self.p.a,i)[0]['part'] for i in find(self.p.c,self.p.a,self.report)]
         self.assertTrue(any(p.startswith('web-plan-') for p in originals));self.assertTrue(any(p.startswith('web-receipt-') for p in originals))
 
@@ -50,7 +50,7 @@ class WebReportsTests(unittest.TestCase):
         ident=next(iter(self.publisher.saved))
         recovered=self.web.status(self.p.a,ident,lambda:True)
         self.assertEqual(recovered['state'],'published');self.assertTrue(recovered['receipt'])
-        from anc.originals import get
+        from loom.originals import get
         receipt,_=get(self.p.c,self.p.a,recovered['receipt'])
         self.assertEqual(receipt['name'],'web-receipt.json')
         out=self.publish();self.assertEqual(out['state'],'published');self.assertEqual(self.publisher.puts,1)
@@ -86,13 +86,13 @@ class WebReportsTests(unittest.TestCase):
         with self.assertRaises(Denied):grant_deadline(Policy(state),ctx,r)
 
     def test_rpc_requires_rules_backup_and_configuration_before_returning_dual_links(self):
-        from anc.rpc import RuntimeAPI
-        from anc.skills import Skills
+        from loom.rpc import RuntimeAPI
+        from loom.skills import Skills
         api=RuntimeAPI(self.p.c,Path.cwd(),b'x'*32,report_leaf=self.p.leaf,cloud_reports=self.p.cloud)
         token=api.issue(self.p.a)
         args={'id':'rpc-web','report':self.report,'format':'interactive','backup':self.backup}
         with self.assertRaises(Denied):api.call(token,'report_publish',args)
-        for name in ('anc-work-records','anc-onboard','anc-reports'):
+        for name in ('loom-work-records','loom-onboard','loom-reports'):
             Skills(self.p.c).publish(name,'v1',Path('skills')/name,'fixture')
             Skills(self.p.c).deploy(self.p.a.scope,name,'v1',self.p.root/'work')
         api.rules.load(self.p.a,'SessionStart','report-web-test')

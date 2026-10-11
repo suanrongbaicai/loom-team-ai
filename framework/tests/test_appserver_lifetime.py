@@ -8,7 +8,7 @@ import time
 import unittest
 
 
-@unittest.skipUnless(os.name == 'nt' and os.environ.get('ANC_CODEX_OFFLINE_BINARY'), 'opt-in Windows offline test')
+@unittest.skipUnless(os.name == 'nt' and os.environ.get('LOOM_CODEX_OFFLINE_BINARY'), 'opt-in Windows offline test')
 class LifetimeTests(unittest.TestCase):
     def test_parent_crash_closes_contained_host_without_model_call(self):
         import ctypes
@@ -26,12 +26,12 @@ request_max_retries = 0
 stream_max_retries = 0
 ''')
             payload = root / 'parameters.json'
-            payload.write_text(json.dumps({'argv': [os.environ['ANC_CODEX_OFFLINE_BINARY'], 'app-server', '--stdio'],
+            payload.write_text(json.dumps({'argv': [os.environ['LOOM_CODEX_OFFLINE_BINARY'], 'app-server', '--stdio'],
                 'root': str(root)}))
             helper = root / 'contained_parent.py'
             helper.write_text('''import json,os,sys
 from pathlib import Path
-from anc.appserver import AppServer
+from loom.appserver import AppServer
 p=json.loads(Path(sys.argv[1]).read_text()); root=Path(p['root'])
 env={'CODEX_HOME':str(root/'home'),'TEMP':str(root/'temp'),'TMP':str(root/'temp'),
  'USERPROFILE':str(root/'profile'),'APPDATA':str(root/'profile'/'AppData'/'Roaming'),
@@ -40,7 +40,7 @@ client=AppServer(p['argv'],env,str(root),root/'stderr.txt',lambda *a:None,lambda
 (root/'host-pid.json').write_text(json.dumps({'pid':client.process.pid}))
 os._exit(0)
 ''', encoding='utf-8')
-            child = subprocess.run([os.environ['ANC_OFFLINE_PYTHON'], '-B', str(helper), str(payload)],
+            child = subprocess.run([os.environ['LOOM_OFFLINE_PYTHON'], '-B', str(helper), str(payload)],
                 cwd=root, capture_output=True, timeout=25)
             self.assertEqual(child.returncode, 0, child.stderr.decode('utf-8', 'replace'))
             pid = json.loads((root / 'host-pid.json').read_text())['pid']

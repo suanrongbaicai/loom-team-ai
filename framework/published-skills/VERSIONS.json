@@ -2,50 +2,50 @@
   "meaning": "Published method snapshots; default framework skill files remain separately available. Host deployment selects the approved version.",
   "skills": [
     {
-      "skill": "anc-business",
+      "skill": "loom-business",
       "version": "v1",
       "framework_identical": false,
       "registered_digest_verified": true
     },
     {
-      "skill": "anc-capabilities",
+      "skill": "loom-capabilities",
       "version": "v1",
       "framework_identical": false,
       "registered_digest_verified": true
     },
     {
-      "skill": "anc-customer-profile",
+      "skill": "loom-customer-profile",
       "version": "v1",
       "framework_identical": false,
       "registered_digest_verified": true
     },
     {
-      "skill": "anc-onboard",
+      "skill": "loom-onboard",
       "version": "v2",
       "framework_identical": false,
       "registered_digest_verified": true
     },
     {
-      "skill": "anc-people",
+      "skill": "loom-people",
       "version": "v1",
       "framework_identical": false,
       "registered_digest_verified": false,
       "public_example_adapted": true
     },
     {
-      "skill": "anc-reports",
+      "skill": "loom-reports",
       "version": "v11-report-build",
       "framework_identical": true,
       "registered_digest_verified": true
     },
     {
-      "skill": "anc-wechat",
+      "skill": "loom-wechat",
       "version": "v4-senders-video-frames",
       "framework_identical": false,
       "registered_digest_verified": true
     },
     {
-      "skill": "anc-work-records",
+      "skill": "loom-work-records",
       "version": "v10-navigation-links",
       "framework_identical": false,
       "registered_digest_verified": true

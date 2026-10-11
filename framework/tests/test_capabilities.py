@@ -16,10 +16,10 @@ import uuid
 from unittest.mock import patch
 import zipfile
 
-from anc.capabilities import Capabilities, permissions, safe_name
-from anc.capability_network import check_url, request, wheel_files
-from anc.human_messages import context
-from anc.policy import Denied
+from loom.capabilities import Capabilities, permissions, safe_name
+from loom.capability_network import check_url, request, wheel_files
+from loom.human_messages import context
+from loom.policy import Denied
 from tests import test_platform_decisions as fixtures
 
 
@@ -184,16 +184,16 @@ class CapabilityTests(unittest.TestCase):
     def test_post_unconfirmed_cannot_repeat_under_new_call_number(self):
         spec={'network':[{'name':'one-write','url':'https://example.com/approved','method':'POST','body':'{}','purpose':'一次具体外发'}]}
         self.standing(spec);key=self.propose(spec)['id']
-        with patch('anc.capability_network.request',side_effect=OSError('response lost')) as fetch:
+        with patch('loom.capability_network.request',side_effect=OSError('response lost')) as fetch:
             with self.assertRaises(OSError):self.cap.fetch(self.ctx,key,'one-write')
             with self.assertRaises(Denied):self.cap.fetch(self.ctx,key,'one-write')
             self.assertEqual(fetch.call_count,1)
 
     def test_network_original_survives_binary_to_text_conversion(self):
-        from anc.originals import find,get
+        from loom.originals import find,get
         spec={'network':[{'name':'file','url':'https://example.com/original','method':'GET','purpose':'获准原件'}]}
         self.standing(spec);key=self.propose(spec)['id'];raw=b'%PDF-binary\x00\xff'
-        with patch('anc.capability_network.request',return_value=(raw,'application/pdf')):
+        with patch('loom.capability_network.request',return_value=(raw,'application/pdf')):
             response=self.cap.fetch(self.ctx,key,'file')
         keys=find(self.c,self.ctx,response['id'])
         self.assertEqual(len(keys),1)

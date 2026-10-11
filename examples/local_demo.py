@@ -10,8 +10,8 @@ import sys
 import tempfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'framework'))
-from anc.control import Control
-from anc.policy import Denied
+from loom.control import Control
+from loom.policy import Denied
 from tools.policy_open import switch
 
 
@@ -120,7 +120,7 @@ def main():
         args.output.mkdir(parents=True, exist_ok=True)
         result = run(args.output)
     else:
-        with tempfile.TemporaryDirectory(prefix='anc-demo-', dir=Path.cwd()) as path:
+        with tempfile.TemporaryDirectory(prefix='loom-demo-', dir=Path.cwd()) as path:
             result = run(Path(path))
     print(json.dumps(result, ensure_ascii=False, indent=2))
 

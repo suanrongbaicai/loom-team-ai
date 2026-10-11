@@ -175,7 +175,7 @@ const $=s=>document.querySelector(s);let S=null,drafts={},first=true;
 const esc=t=>String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const toast=t=>{const e=$('#toast');e.textContent=t;e.className='on';clearTimeout(toast.t);toast.t=setTimeout(()=>e.className='',2600)};
 function ask(text){return new Promise(res=>{const d=$('#dlg');$('#dlgt').textContent=text;const done=v=>{d.close();res(v)};$('#dlgy').onclick=()=>done(true);$('#dlgn').onclick=()=>done(false);d.oncancel=()=>res(false);d.showModal()})}
-async function api(name,body){const r=await fetch('/api/'+name,{method:'POST',headers:{'X-ANC-Panel':'1','Content-Type':'application/json'},body:JSON.stringify(body||{})});const j=await r.json();if(!j.ok)throw new Error(j.error||'失败');return j.result}
+async function api(name,body){const r=await fetch('/api/'+name,{method:'POST',headers:{'X-LOOM-Panel':'1','Content-Type':'application/json'},body:JSON.stringify(body||{})});const j=await r.json();if(!j.ok)throw new Error(j.error||'失败');return j.result}
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));['home','people','tools'].forEach(p=>$('#'+p).classList.toggle('hide',p!==b.dataset.p))});
 const SVC={'LOOM-Controller-OwnerWork':['控制器','接收并分派任务'],'LOOM-Gateway-Member':['乙网关','乙的飞书机器人'],'LOOM-Gateway-NewOwner':['负责人网关','负责人的飞书机器人'],'LOOM-ModelProxy':['模型代理','连接模型服务']};
 const svcName=n=>SVC[n]||[n.replace('LOOM-','').replace(/-/g,' '),''];

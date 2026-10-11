@@ -19,8 +19,8 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from anc import member_settings, panel_data  # noqa: E402
-from anc.control import Control  # noqa: E402
+from loom import member_settings, panel_data  # noqa: E402
+from loom.control import Control  # noqa: E402
 
 PAGE = Path(__file__).with_name('panel_web.html')
 DEFAULT_PORT = 9771
@@ -157,7 +157,7 @@ class DemoServices:
 def demo_panel():
     """A throw-away installation with invented people, for looking at the window and trying the buttons."""
     import tempfile
-    root = Path(tempfile.mkdtemp(prefix='anc-panel-demo-'))
+    root = Path(tempfile.mkdtemp(prefix='loom-panel-demo-'))
     control = Control(root / 'control')
     person = lambda extra=None: dict({'active': True, 'verified': True, 'roles': [], 'bindings': []}, **(extra or {}))
     state = {'epoch': 0, 'roster_version': 0, 'governance_confirmed': False, 'grants': [], 'apps': {},
@@ -180,7 +180,7 @@ def make_handler(panel, port):
     allowed_hosts = {'127.0.0.1:%d' % port, 'localhost:%d' % port}
 
     class Handler(BaseHTTPRequestHandler):
-        server_version = 'ANCPanel'
+        server_version = 'LOOMPanel'
 
         def log_message(self, *args):
             pass
@@ -210,7 +210,7 @@ def make_handler(panel, port):
             self.send(404, {'error': 'not found'})
 
         def do_POST(self):
-            if not self.host_ok() or self.headers.get('X-ANC-Panel') != '1':     # a web page cannot set this header cross-site
+            if not self.host_ok() or self.headers.get('X-LOOM-Panel') != '1':     # a web page cannot set this header cross-site
                 return self.send(403, {'error': 'forbidden'})
             length = int(self.headers.get('Content-Length') or 0)
             if not 0 <= length <= 16384:

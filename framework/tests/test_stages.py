@@ -3,8 +3,8 @@ import json
 import unittest
 from unittest.mock import patch
 
-from anc.control import Control
-from anc.policy import Denied
+from loom.control import Control
+from loom.policy import Denied
 from tests import test_runtime
 
 
@@ -48,7 +48,7 @@ class StageTests(unittest.TestCase):
         self.assertIn('累计',message)
 
     def test_non_ascii_identifier_is_rejected_with_clear_reason_and_schema_says_so(self):
-        from anc.mcp import ID
+        from loom.mcp import ID
         self.assertIn('a-zA-Z0-9',ID['pattern'])
         tok=self.ready()
         with self.assertRaisesRegex(ValueError,'ASCII'):
@@ -82,7 +82,7 @@ class StageTests(unittest.TestCase):
             self.api.call(tok,'save_work',{})
 
     def test_long_stage_token_copy_errors_are_forgiven_only_when_unambiguous_and_are_explained(self):
-        from anc import stages
+        from loom import stages
         tok=self.ready();self.write(tok,'fact-t')
         shot=self.api.call(tok,'stage_receipt',{})['stage']
         with self.c.db.transaction() as db:
@@ -319,7 +319,7 @@ class StageTests(unittest.TestCase):
     def test_receipts_survive_controller_reconstruction(self):
         tok=self.ready();self.write(tok,'source')
         batch=self.api.call(tok,'stage_receipt',{})
-        from anc.stages import inspect
+        from loom.stages import inspect
         restarted=Control(self.c.root)
         self.assertEqual(inspect(restarted,self.ctx,batch['stage']),batch)
 

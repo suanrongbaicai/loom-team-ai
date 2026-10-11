@@ -9,12 +9,12 @@ import unittest
 from unittest.mock import patch
 import zipfile
 
-from anc.control import digest
-from anc.policy import Denied
-from anc.wechat_senders import sender
-from anc.wechat_attachments import Attachments
-from anc.wechat_media_reader import checked_times,text_file
-from anc.mcp import handle
+from loom.control import digest
+from loom.policy import Denied
+from loom.wechat_senders import sender
+from loom.wechat_attachments import Attachments
+from loom.wechat_media_reader import checked_times,text_file
+from loom.mcp import handle
 from tests import test_wechat_capture as fixture
 from tests.test_control import grant
 
@@ -70,7 +70,7 @@ class WeChatFollowupTests(unittest.TestCase):
         with self.assertRaises(Denied):self.wx.read_page(mixed,source)
 
     def test_returned_original_and_sender_citations_are_usable_without_rereading_full_capture(self):
-        from anc.references import passage,occurrences
+        from loom.references import passage,occurrences
         source,original,root=self.cached();page=self.wx.read_page(self.ctx,source,0,1)
         passage(self.c,self.ctx,'wechat-stage',0,'采用已核实发送者及第0条原消息。','wechat-stage-one',
                 [page['citation'],page['sender_citation']])

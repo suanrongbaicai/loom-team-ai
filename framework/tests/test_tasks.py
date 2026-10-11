@@ -2,8 +2,8 @@ import json
 from pathlib import Path
 import unittest
 
-from anc.policy import Context, Denied
-from anc.tasks import Tasks
+from loom.policy import Context, Denied
+from loom.tasks import Tasks
 import tests.test_scheduler as fixtures
 
 
@@ -90,10 +90,10 @@ class LongTaskTests(unittest.TestCase):
             tasks.start(ctx, '改成其他工作', request_id='request-one')
 
     def test_continuation_reloads_pinned_method_when_new_chats_use_new_version(self):
-        from anc.skills import Skills
-        from anc.rules import Rules
+        from loom.skills import Skills
+        from loom.rules import Rules
         skills = Skills(self.c)
-        for key in ('anc-onboard', 'anc-work-records'):
+        for key in ('loom-onboard', 'loom-work-records'):
             source = self.root / key
             source.mkdir()
             (source / 'SKILL.md').write_text('Synthetic method version ONE', encoding='utf-8')
@@ -102,11 +102,11 @@ class LongTaskTests(unittest.TestCase):
         old = self.context(self.event('original')['task'])
         rules = Rules(self.c, Path.cwd())
         rules.load(old, 'SessionStart')
-        skills.adopt(old, 'anc-onboard', 'v1')
+        skills.adopt(old, 'loom-onboard', 'v1')
         self.scheduler.start_one()
         self.finish()
         self.scheduler.poll()
-        for key in ('anc-onboard', 'anc-work-records'):
+        for key in ('loom-onboard', 'loom-work-records'):
             source = self.root / key
             (source / 'SKILL.md').write_text('Synthetic method version TWO', encoding='utf-8')
             skills.publish(key, 'v2', source, 'test-approval-v2')
@@ -115,13 +115,13 @@ class LongTaskTests(unittest.TestCase):
         self.assertIn('version TWO', rules.load(current, 'SessionStart'))
         child = self.context(Tasks(self.c).start(current, '续接原任务', old.task)['task'])
         with self.assertRaises(Denied):
-            skills.adopt(child, 'anc-onboard', 'v1')
+            skills.adopt(child, 'loom-onboard', 'v1')
         text = rules.load(child, 'SessionStart')
         self.assertIn('version ONE', text)
         self.assertNotIn('version TWO', text)
-        skills.adopt(child, 'anc-onboard', 'v1')
+        skills.adopt(child, 'loom-onboard', 'v1')
         with self.assertRaises(Denied):
-            skills.adopt(child, 'anc-onboard', 'v2')
+            skills.adopt(child, 'loom-onboard', 'v2')
 
 
 if __name__ == '__main__':

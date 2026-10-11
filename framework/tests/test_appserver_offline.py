@@ -1,6 +1,6 @@
 """Opt-in real installed CLI test. The only provider is a loopback fake.
 
-ANC_CODEX_OFFLINE_BINARY must explicitly name the installed binary. The test
+LOOM_CODEX_OFFLINE_BINARY must explicitly name the installed binary. The test
 uses a fresh temporary CODEX_HOME with no auth.json and never runs live models.
 """
 import json
@@ -13,10 +13,10 @@ import time
 import unittest
 from unittest.mock import patch
 
-from anc.policy import Context
-from anc.appserver import AppServer, HostRejected
-from anc.model_backend import Host
-from anc.worker import make_job
+from loom.policy import Context
+from loom.appserver import AppServer, HostRejected
+from loom.model_backend import Host
+from loom.worker import make_job
 from tests.test_model_backend import BackendTests
 
 
@@ -51,7 +51,7 @@ class Handler(BaseHTTPRequestHandler):
         # input items rather than the mock-model's top-level tools array.
         catalog = json.dumps([item.get('tools', []) for item in body['input']
                               if item.get('type') == 'additional_tools'])
-        assert 'anc_read(args:' in catalog, 'task tool declaration missing'
+        assert 'loom_read(args:' in catalog, 'task tool declaration missing'
         for native in ('apply_patch', 'exec_command', 'shell_command', 'view_image'):
             assert ('### `' + native + '`') not in catalog, native
         assert body['model'] == 'example-model-a'
@@ -86,7 +86,7 @@ class Handler(BaseHTTPRequestHandler):
                 code = ('const old = load("private-task"); '
                     f'if (old !== undefined && old !== {index}) throw new Error("cross-thread code-mode state"); '
                     f'store("private-task", {index}); '
-                    'text(await tools.anc_read(' + json.dumps({'id': self.server.sources[index]}) + '));')
+                    'text(await tools.loom_read(' + json.dumps({'id': self.server.sources[index]}) + '));')
                 item = {'type': 'custom_tool_call', 'id': f'fc-{index}', 'call_id': f'call-{index}',
                         'namespace': 'functions', 'name': 'exec', 'input': code}
                 self.event({'type': 'response.output_item.done', 'item': item})
@@ -116,7 +116,7 @@ class Handler(BaseHTTPRequestHandler):
             self.close_connection = True
 
 
-@unittest.skipUnless(os.environ.get('ANC_CODEX_OFFLINE_BINARY'), 'real offline CLI test is opt-in')
+@unittest.skipUnless(os.environ.get('LOOM_CODEX_OFFLINE_BINARY'), 'real offline CLI test is opt-in')
 class RealAppServerTests(unittest.TestCase):
     def wait_for(self, check, timeout=35):
         end = time.monotonic() + timeout
@@ -152,9 +152,9 @@ class RealAppServerTests(unittest.TestCase):
                         server.rpc_errors.append({'method': method, 'error': error.protocol_error})
                         raise
             fixture.pool.host_factory = lambda pool, resource, scope: Host(pool, resource, scope, factory=RecordedServer)
-            fixture.runtime['codex'] = os.environ['ANC_CODEX_OFFLINE_BINARY']
-            fixture.runtime['python'] = os.environ['ANC_OFFLINE_PYTHON']
-            fixture.runtime['model_catalog_json'] = os.environ['ANC_OFFLINE_MODEL_CATALOG']
+            fixture.runtime['codex'] = os.environ['LOOM_CODEX_OFFLINE_BINARY']
+            fixture.runtime['python'] = os.environ['LOOM_OFFLINE_PYTHON']
+            fixture.runtime['model_catalog_json'] = os.environ['LOOM_OFFLINE_MODEL_CATALOG']
             for scope in fixture.scopes.values():
                 scope.update(model='example-model-a', reasoning='medium')
             home = Path(fixture.scopes['chat-0']['worker_home']) / 'CodexHome'
@@ -172,7 +172,7 @@ stream_max_retries = 0
                 with fixture.c.db.transaction() as db:
                     fixture.c._check(db, ctx)
                     fixture.c.audit(db, 'offline-rules', ctx.task, 'rules.delivered', {'event': event})
-                return 'Trusted synthetic rules. Use the explicitly supplied ANC tool.'
+                return 'Trusted synthetic rules. Use the explicitly supplied LOOM tool.'
             def synthetic_job(ctx, token, runtime, scope, prompt):
                 job = original(ctx, token, runtime, scope, prompt)
                 job['prompt'] = 'synthetic-task-' + str(indices[ctx.task])
@@ -186,7 +186,7 @@ stream_max_retries = 0
                     server.sources[index] = db.execute('SELECT m.resource FROM tasks t JOIN messages m ON m.id=t.event WHERE t.id=?', (task,)).fetchone()[0]
                 server.expected[index] = 'synthetic-task-' + str(index)
                 return task
-            with patch.object(fixture.api.rules, 'load', side_effect=synthetic_rules), patch('anc.scheduler.make_job', side_effect=synthetic_job):
+            with patch.object(fixture.api.rules, 'load', side_effect=synthetic_rules), patch('loom.scheduler.make_job', side_effect=synthetic_job):
                 tasks = [arrive(i, i) for i in range(8)]
                 started = [fixture.scheduler.start_one() for _ in range(7)]
                 self.assertEqual(started, tasks[:7])
@@ -217,7 +217,7 @@ stream_max_retries = 0
                     with fixture.c.db.transaction() as db:
                         reads = {r[0] for r in db.execute('SELECT document FROM task_reads WHERE task=?', (task,))}
                     self.assertEqual(reads, {server.sources[indices[task]]})
-                    from anc.usage import parse_events
+                    from loom.usage import parse_events
                     usage = parse_events(Path(jobs[task]['output_dir']) / 'events.jsonl')
                     self.assertEqual(usage['input_tokens'], 2)
                     self.assertEqual(usage['output_tokens'], 2)

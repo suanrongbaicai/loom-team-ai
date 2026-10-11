@@ -1,8 +1,8 @@
 import copy
 import unittest
 
-from anc.control import Conflict, Control, RecoveryRequired
-from anc.policy import Denied
+from loom.control import Conflict, Control, RecoveryRequired
+from loom.policy import Denied
 from tests import test_runtime
 
 
@@ -82,7 +82,7 @@ class ContextPatchTests(unittest.TestCase):
         # Even an otherwise authorized body edit cannot introduce unchecked
         # object names/aliases through the metadata header.
         args=self.change();args['edits']=[{'old':'人数10',
-            'new':'---\nanc_lookup: {"name":"别的事项","aliases":[]}\n---\n人数10'}]
+            'new':'---\nloom_lookup: {"name":"别的事项","aliases":[]}\n---\n人数10'}]
         with self.assertRaises(Denied):self.api.call(tok,'patch_context',args)
 
     def test_same_patch_after_prepared_interruption_recovers_once(self):

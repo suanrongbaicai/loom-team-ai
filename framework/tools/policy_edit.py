@@ -14,8 +14,8 @@ from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from anc.control import Control  # noqa: E402
-from anc.instance import InstanceBusy, InstanceLock  # noqa: E402
+from loom.control import Control  # noqa: E402
+from loom.instance import InstanceBusy, InstanceLock  # noqa: E402
 
 REMOVABLE = ('wechat_sources', 'wechat_captures', 'wechat_accounts')
 

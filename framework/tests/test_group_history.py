@@ -8,14 +8,14 @@ from concurrent.futures import ThreadPoolExecutor
 from types import SimpleNamespace
 from urllib.parse import parse_qs, urlsplit
 
-from anc.control import Control
-from anc.group_history import GroupHistory
-from anc.ingress import Ingress
-from anc.membership import AudienceUnavailable
-from anc.policy import Context, Denied, StaleContext
-from anc.rpc import RuntimeAPI
-from anc.mcp import handle
-from anc.skills import Skills
+from loom.control import Control
+from loom.group_history import GroupHistory
+from loom.ingress import Ingress
+from loom.membership import AudienceUnavailable
+from loom.policy import Context, Denied, StaleContext
+from loom.rpc import RuntimeAPI
+from loom.mcp import handle
+from loom.skills import Skills
 from tests.test_control import fixture
 
 
@@ -54,7 +54,7 @@ class HistoryTests(unittest.TestCase):
         self.h = GroupHistory(self.c,{'app-alice':self.client},{'enabled':True,'approved':True,'apps':['app-alice']})
         self.api = RuntimeAPI(self.c,Path.cwd(),b'synthetic'*8,group_history=self.h)
         skills = Skills(self.c)
-        for key in ('anc-work-records','anc-onboard'):
+        for key in ('loom-work-records','loom-onboard'):
             skills.publish(key,'v1',Path.cwd()/'skills'/key,'synthetic-test-approval')
             skills.deploy('group',key,'v1',self.root/'worker')
         self.token = self.api.issue(self.ctx)
@@ -235,7 +235,7 @@ class HistoryTests(unittest.TestCase):
         received=Ingress(self.c).accept(event)
         other=Context('alice','mixed',self.epoch,received['task'])
         skills=Skills(self.c)
-        for key in ('anc-work-records','anc-onboard'):
+        for key in ('loom-work-records','loom-onboard'):
             skills.deploy('mixed',key,'v1',self.root/'worker-other')
         other_token=self.api.issue(other)
         self.api.call(other_token,'rules',{'event':'SessionStart'})

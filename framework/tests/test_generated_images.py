@@ -10,11 +10,11 @@ from unittest.mock import patch
 import uuid
 import zlib
 
-from anc.control import Control
-from anc.generated_images import GeneratedImages, png_size
-from anc.gateway import FeishuTransport
-from anc.policy import Denied
-from anc.transport import NotSent, Sender
+from loom.control import Control
+from loom.generated_images import GeneratedImages, png_size
+from loom.gateway import FeishuTransport
+from loom.policy import Denied
+from loom.transport import NotSent, Sender
 from tests.test_control import fixture
 
 
@@ -41,7 +41,7 @@ class ImageTests(unittest.TestCase):
         def delivered(c,ctx,text,key,recording,finish=False,prepare=None):
             saved=c.save_reply(ctx,text,key); prepare(saved)
             return {'outbox':c.queue_reply(ctx,saved['id'],finish),'state':'queued'}
-        with patch('anc.recording.deliver',delivered): return self.g.queue(self.ctx,self.m['image'],key,{},False)
+        with patch('loom.recording.deliver',delivered): return self.g.queue(self.ctx,self.m['image'],key,{},False)
 
     def sender(self,send):
         class Transport:
@@ -120,11 +120,11 @@ class ImageTests(unittest.TestCase):
         self.assertEqual(self.sender(lambda *args:'om_receipt').send_one(q['outbox'])['state'],'sent')
 
     def api(self):
-        from anc.rpc import RuntimeAPI
-        from anc.skills import Skills
+        from loom.rpc import RuntimeAPI
+        from loom.skills import Skills
         api=RuntimeAPI(self.c,Path.cwd(),b'x'*48,generated_images=self.g)
         skills=Skills(self.c)
-        for key in ('anc-work-records','anc-onboard'):
+        for key in ('loom-work-records','loom-onboard'):
             skills.publish(key,'v1',Path('skills')/key,'test-approval')
             skills.deploy(self.ctx.scope,key,'v1',self.root/'work')
         token=api.issue(self.ctx);api.call(token,'preflight',{});api.rules.load(self.ctx,'SessionStart','image-fixture')
@@ -134,7 +134,7 @@ class ImageTests(unittest.TestCase):
         api,token=self.api()
         m=api.call(token,'generated_images',{})['images'][0]
         api.call(token,'case_passage',{'event':'image-stage','base':0,'text':'实际图像已生成，尚未投递。','commit_id':'image-stage-1',
-            'citations':[{'id':m['image'],'revision':1,'quote':'anc-native-image-v1'}]})
+            'citations':[{'id':m['image'],'revision':1,'quote':'loom-native-image-v1'}]})
         declaration={'stage':'current','basis':'stage','events':['image-stage'],
             'data':{'state':'updated','reason':'保存图片原件和本阶段引用。'},'event':{'state':'updated','reason':'记录生成和待发送状态。'},
             'context':{'state':'no_change','reason':'测试不产生人员判断。'}}
@@ -145,7 +145,7 @@ class ImageTests(unittest.TestCase):
         with self.assertRaises(Denied):api.call(token,'send_image',dict(args,chat='oc_other'))
 
     def test_native_notification_requires_actual_thread_and_turn(self):
-        from anc.model_backend import Host,Run
+        from loom.model_backend import Host,Run
         api,token=self.api()
         output=self.root/'outputs';output.mkdir()
         run=Run({'id':self.ctx.task,'output_dir':str(output)},token,thread='thread-new',turn='turn-new')

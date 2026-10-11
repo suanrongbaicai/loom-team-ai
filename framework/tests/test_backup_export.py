@@ -7,7 +7,7 @@ import sqlite3
 import tempfile
 import unittest
 
-from anc.control import Control
+from loom.control import Control
 from tests.test_control import fixture
 from tools import backup_export as be
 
@@ -19,8 +19,8 @@ class BackupTests(unittest.TestCase):
         Path('.test-work').mkdir(exist_ok=True)
         self.temp = tempfile.TemporaryDirectory(dir='.test-work')
         self.base = Path(self.temp.name).absolute()
-        self.anc = self.base / 'LOOM'
-        self.control = self.anc / 'Control' / 'OwnerWork'
+        self.loom = self.base / 'LOOM'
+        self.control = self.loom / 'Control' / 'OwnerWork'
         self.control.mkdir(parents=True)
         policy = fixture(self.base / 'roots')
         for name, item in policy['scopes'].items():
@@ -32,15 +32,15 @@ class BackupTests(unittest.TestCase):
         (self.control / 'controller.json').write_text(SECRET)
         (self.control / 'Artifacts').mkdir()
         (self.control / 'Artifacts' / 'report.html').write_text('<html>report</html>')
-        (self.anc / 'Jobs' / 'a').mkdir(parents=True)
-        (self.anc / 'Jobs' / 'a' / 'job.json').write_text('{}')
-        (self.anc / 'Workers' / 'w' / 'Outputs').mkdir(parents=True)
-        (self.anc / 'Workers' / 'w' / 'Outputs' / 'o.txt').write_text('out')
-        (self.anc / 'Workers' / 'w' / 'CodexHome').mkdir()
-        (self.anc / 'Workers' / 'w' / 'CodexHome' / 'auth.json').write_text(SECRET)
-        (self.anc / 'Control' / 'Gateway').mkdir()
-        (self.anc / 'Control' / 'Gateway' / 'gateway.json').write_text(SECRET)
-        with contextlib.closing(sqlite3.connect(self.anc / 'Control' / 'Gateway' / 'inbox.sqlite')) as db:
+        (self.loom / 'Jobs' / 'a').mkdir(parents=True)
+        (self.loom / 'Jobs' / 'a' / 'job.json').write_text('{}')
+        (self.loom / 'Workers' / 'w' / 'Outputs').mkdir(parents=True)
+        (self.loom / 'Workers' / 'w' / 'Outputs' / 'o.txt').write_text('out')
+        (self.loom / 'Workers' / 'w' / 'CodexHome').mkdir()
+        (self.loom / 'Workers' / 'w' / 'CodexHome' / 'auth.json').write_text(SECRET)
+        (self.loom / 'Control' / 'Gateway').mkdir()
+        (self.loom / 'Control' / 'Gateway' / 'gateway.json').write_text(SECRET)
+        with contextlib.closing(sqlite3.connect(self.loom / 'Control' / 'Gateway' / 'inbox.sqlite')) as db:
             db.execute('CREATE TABLE inbox(id TEXT)')
             db.execute("INSERT INTO inbox VALUES('e1')")
             db.commit()
@@ -55,7 +55,7 @@ class BackupTests(unittest.TestCase):
         result = be.export(self.control, self.usb, progress)
         self.assertEqual(result['state'], 'done')
         folder = Path(result['folder'])
-        self.assertTrue(folder.parent.name == 'ANC-Backup' and not folder.name.endswith('.partial'))
+        self.assertTrue(folder.parent.name == 'LOOM-Backup' and not folder.name.endswith('.partial'))
         manifest, problems = be.verify_backup(folder)
         self.assertEqual(problems, [])
         names = {e['path'] for e in manifest['files']}
@@ -89,7 +89,7 @@ class BackupTests(unittest.TestCase):
 
     def test_refusals_leave_no_partial_folder(self):
         with self.assertRaises(be.Refused):
-            be.export(self.control, self.anc / 'inside')           # destination inside the data folder
+            be.export(self.control, self.loom / 'inside')           # destination inside the data folder
         with self.assertRaises(be.Refused):
             be.export(self.control, self.base / 'missing-drive')
         real = shutil.disk_usage
@@ -103,7 +103,7 @@ class BackupTests(unittest.TestCase):
         finally:
             shutil.disk_usage = real
         self.assertIn('Not enough free space', str(caught.exception))
-        self.assertFalse((self.usb / 'ANC-Backup').exists())
+        self.assertFalse((self.usb / 'LOOM-Backup').exists())
 
     def test_a_failure_in_the_middle_removes_the_working_folder(self):
         original = be.copy_one
@@ -117,12 +117,12 @@ class BackupTests(unittest.TestCase):
                 be.export(self.control, self.usb, progress)
         finally:
             be.copy_one = original
-        self.assertEqual(list((self.usb / 'ANC-Backup').glob('*')), [])
+        self.assertEqual(list((self.usb / 'LOOM-Backup').glob('*')), [])
         self.assertEqual(json.loads(progress.read_text(encoding='utf-8'))['state'], 'failed')
 
     def test_tampering_is_detected_and_restore_puts_everything_back_without_deleting(self):
         folder = Path(be.export(self.control, self.usb)['folder'])
-        before = {p.relative_to(self.anc).as_posix(): p.read_bytes() for p in self.anc.rglob('*') if p.is_file() and p.name != 'runtime.sqlite'}
+        before = {p.relative_to(self.loom).as_posix(): p.read_bytes() for p in self.loom.rglob('*') if p.is_file() and p.name != 'runtime.sqlite'}
         # lose the data, then restore
         (self.control / 'Records').rename(self.base / 'lost')
         (self.control / 'personnel.md').write_text('changed since the backup')
@@ -135,7 +135,7 @@ class BackupTests(unittest.TestCase):
         self.assertEqual((stash / 'Control' / 'OwnerWork' / 'personnel.md').read_text(), 'changed since the backup')   # moved aside, not deleted
         for rel, data in before.items():
             if 'Records' in rel or rel.endswith('personnel.md'):
-                self.assertEqual((self.anc / rel).read_bytes(), data, rel)
+                self.assertEqual((self.loom / rel).read_bytes(), data, rel)
         victim = next((folder / 'data').rglob('report.html'))
         victim.write_text('tampered')
         self.assertTrue(be.restore(folder, self.control, apply=True)['problems'])
@@ -158,9 +158,9 @@ class BackupTests(unittest.TestCase):
 
     def test_cli(self):
         self.assertEqual(be.main(['export', '--control', str(self.control), '--dest', str(self.usb)]), 0)
-        folder = next((self.usb / 'ANC-Backup').iterdir())
+        folder = next((self.usb / 'LOOM-Backup').iterdir())
         self.assertEqual(be.main(['verify', '--from', str(folder)]), 0)
-        self.assertEqual(be.main(['export', '--control', str(self.control), '--dest', str(self.anc / 'x')]), 2)
+        self.assertEqual(be.main(['export', '--control', str(self.control), '--dest', str(self.loom / 'x')]), 2)
 
 
 if __name__ == '__main__':

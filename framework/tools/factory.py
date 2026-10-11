@@ -15,7 +15,7 @@ import sys
 import time
 
 SRC = Path(__file__).resolve().parents[1]
-INCLUDE_DIRS = ('anc', 'rules', 'skills', 'tools', 'tests', 'licenses', 'templates')
+INCLUDE_DIRS = ('loom', 'rules', 'skills', 'tools', 'tests', 'licenses', 'templates')
 INCLUDE_FILES = ('README.md', 'THIRD_PARTY_NOTICES.md', 'pyproject.toml', 'requirements-feishu-win-py312.lock', 'sdk-download-manifest.json')
 TEMPLATES = SRC / 'factory' / 'templates'
 EXCLUDE_NAMES = {'__pycache__', '.test-work', 'purge_test_data.py', 'test_purge_test_data.py'}

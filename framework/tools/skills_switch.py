@@ -1,4 +1,4 @@
-"""Protected administrator tool: publish anc-onboard v2 + anc-customer-profile v1 and switch scopes to them.
+"""Protected administrator tool: publish loom-onboard v2 + loom-customer-profile v1 and switch scopes to them.
 
 Why a stopped controller: Control.lock is only an in-process lock, and Skills.deploy refuses a workspace whose
 skill directory differs from the registered version. Moving the directory and registering the deployment are two
@@ -17,7 +17,7 @@ from pathlib import Path
 import shutil
 import sys
 
-SKILLS = (('anc-onboard', 'v2'), ('anc-customer-profile', 'v1'))
+SKILLS = (('loom-onboard', 'v2'), ('loom-customer-profile', 'v1'))
 ACTIVE = "SELECT count(*) FROM tasks WHERE state IN ('queued','running','preparing','ingesting')"
 OPEN_EXECUTIONS = 'SELECT count(*) FROM executions WHERE finished IS NULL'
 
@@ -80,28 +80,28 @@ def physical_groups(homes):
 
 def precheck(c, homes, sources):
     """Read-only: everything the switch relies on. Returns the facts it found (also used for the read-only run)."""
-    from anc.skills import tree_digest
+    from loom.skills import tree_digest
     with c.db.transaction() as db:
         rows = {(r['id'], r['version']): dict(r) for r in db.execute('SELECT * FROM skills')}
         deployments = [dict(r) for r in db.execute('SELECT * FROM skill_deployments')]
-    v1 = rows.get(('anc-onboard', 'v1'))
-    require(v1 and v1['state'] == 'active', 'Registered anc-onboard v1 missing')
+    v1 = rows.get(('loom-onboard', 'v1'))
+    require(v1 and v1['state'] == 'active', 'Registered loom-onboard v1 missing')
     digests = {key: tree_digest(sources[key])[0] for key, _ in SKILLS}
     for key, version in SKILLS:
         row = rows.get((key, version))
         require(row is None or row['digest'] == digests[key], 'Registered %s %s differs from the source' % (key, version))
-    require(not [r for r in deployments if r['skill'] == 'anc-customer-profile' and r['scope'] in homes],
+    require(not [r for r in deployments if r['skill'] == 'loom-customer-profile' and r['scope'] in homes],
             'A customer-profile deployment row already exists for a target scope')
     found = {}
     for scope in homes:                                          # every scope, shared directory or not, must start from the same v1 registration
-        row = [r for r in deployments if r['scope'] == scope and r['skill'] == 'anc-onboard']
-        require(len(row) == 1 and (row[0]['version'], row[0]['digest']) == ('v1', v1['digest']), 'Scope %s is not registered at anc-onboard v1' % scope)
+        row = [r for r in deployments if r['scope'] == scope and r['skill'] == 'loom-onboard']
+        require(len(row) == 1 and (row[0]['version'], row[0]['digest']) == ('v1', v1['digest']), 'Scope %s is not registered at loom-onboard v1' % scope)
     for key, group in physical_groups(homes).items():
         work = group['work']
         skills_dir, _, _ = target_dirs(work)
-        current = safe(work, skills_dir / 'anc-onboard')
-        require(current.is_dir() and tree_digest(current)[0] == v1['digest'], 'Work for %s anc-onboard is not the registered v1' % group['scopes'])
-        require(not (skills_dir / 'anc-customer-profile').exists(), 'Work for %s already has anc-customer-profile' % group['scopes'])
+        current = safe(work, skills_dir / 'loom-onboard')
+        require(current.is_dir() and tree_digest(current)[0] == v1['digest'], 'Work for %s loom-onboard is not the registered v1' % group['scopes'])
+        require(not (skills_dir / 'loom-customer-profile').exists(), 'Work for %s already has loom-customer-profile' % group['scopes'])
         for name in ('skills-staging', 'skills-retired'):
             safe(work, work / '.agents' / name)
         for scope in group['scopes']:
@@ -112,7 +112,7 @@ def precheck(c, homes, sources):
 def switch(c, homes, sources, approval, journal_path, stamp, after_scope=None):
     """homes: {scope: Work directory}. sources: {skill: directory with SKILL.md}.
     Raises RollbackFailed if restoration cannot be confirmed; any other exception means everything is back at v1."""
-    from anc.skills import Skills, tree_digest
+    from loom.skills import Skills, tree_digest
     skills = Skills(c)
     before = counts(c)
     require(before['tasks'] == before['executions'] == 0, 'Active work; do not switch')
@@ -134,19 +134,19 @@ def switch(c, homes, sources, approval, journal_path, stamp, after_scope=None):
                 save()
         with c.db.transaction() as db:
             registered = {(r['id'], r['version']): dict(r) for r in db.execute('SELECT * FROM skills')}
-        new = registered[('anc-onboard', 'v2')]
+        new = registered[('loom-onboard', 'v2')]
         for key, group in groups.items():
             work = group['work']
             skills_dir, staging, retired = target_dirs(work)
             gstep = journal['groups'].setdefault(key, {'scopes': group['scopes']})
-            stage = safe(work, staging / ('anc-onboard.' + stamp))
+            stage = safe(work, staging / ('loom-onboard.' + stamp))
             stage.parent.mkdir(parents=True, exist_ok=True)
             shutil.copytree(new['path'], stage)
             safe(work, stage)
             require(tree_digest(stage)[0] == new['digest'], 'Staged v2 mismatch')
-            old_home = safe(work, retired / ('anc-onboard-v1-' + stamp))
+            old_home = safe(work, retired / ('loom-onboard-v1-' + stamp))
             old_home.parent.mkdir(parents=True, exist_ok=True)
-            target = safe(work, skills_dir / 'anc-onboard')
+            target = safe(work, skills_dir / 'loom-onboard')
             os.replace(target, old_home)                         # once per physical directory
             gstep['retired'] = True
             save()
@@ -156,10 +156,10 @@ def switch(c, homes, sources, approval, journal_path, stamp, after_scope=None):
             require(tree_digest(safe(work, target))[0] == new['digest'], 'Switched v2 mismatch')
             for scope in group['scopes']:                        # each scope is registered and verified on its own
                 step = journal['scopes'].setdefault(scope, {'group': key})
-                skills.deploy(scope, 'anc-onboard', 'v2', work)
+                skills.deploy(scope, 'loom-onboard', 'v2', work)
                 step['onboard_deployed'] = True
                 save()
-                skills.deploy(scope, 'anc-customer-profile', 'v1', work)
+                skills.deploy(scope, 'loom-customer-profile', 'v1', work)
                 step['profile_deployed'] = True
                 save()
                 if after_scope:
@@ -168,7 +168,7 @@ def switch(c, homes, sources, approval, journal_path, stamp, after_scope=None):
         require(after['loaded_audits'] == before['loaded_audits'], 'skill.loaded count changed; never fabricate it')
         require(after['published_audits'] == before['published_audits'] + len(journal['published']), 'Unexpected publish audit count')
         with c.db.transaction() as db:
-            v1_after = dict(db.execute("SELECT * FROM skills WHERE id='anc-onboard' AND version='v1'").fetchone())
+            v1_after = dict(db.execute("SELECT * FROM skills WHERE id='loom-onboard' AND version='v1'").fetchone())
         require(v1_after == journal['v1_row_before'], 'The v1 registration changed')
         for scope, work in homes.items():
             skills_dir, _, _ = target_dirs(work)
@@ -201,36 +201,36 @@ def switch(c, homes, sources, approval, journal_path, stamp, after_scope=None):
 def restore(c, homes, journal, stamp):
     """Put every touched physical directory back once, then restore each scope's registration to v1 and drop only the
     deployment rows this run created. Verifies the result; raises if any scope cannot be confirmed."""
-    from anc.skills import Skills, tree_digest
+    from loom.skills import Skills, tree_digest
     skills = Skills(c)
     with c.db.transaction() as db:
-        v1 = dict(db.execute("SELECT * FROM skills WHERE id='anc-onboard' AND version='v1'").fetchone())
+        v1 = dict(db.execute("SELECT * FROM skills WHERE id='loom-onboard' AND version='v1'").fetchone())
     groups = physical_groups(homes)
     for key, gstep in journal['groups'].items():
         work = groups[key]['work']
         skills_dir, _, retired_dir = target_dirs(work)
-        profile = safe(work, skills_dir / 'anc-customer-profile')
+        profile = safe(work, skills_dir / 'loom-customer-profile')
         if profile.exists():
             shutil.rmtree(profile)
         if gstep.get('retired'):
-            target = safe(work, skills_dir / 'anc-onboard')
-            retired = safe(work, retired_dir / ('anc-onboard-v1-' + stamp))   # derived from the stamp, never trusted from the file
+            target = safe(work, skills_dir / 'loom-onboard')
+            retired = safe(work, retired_dir / ('loom-onboard-v1-' + stamp))   # derived from the stamp, never trusted from the file
             if target.exists():
-                failed = safe(work, retired_dir / ('anc-onboard-v2-failed-' + stamp))
+                failed = safe(work, retired_dir / ('loom-onboard-v2-failed-' + stamp))
                 os.replace(target, failed)
             os.replace(retired, target)
-        require(tree_digest(safe(work, skills_dir / 'anc-onboard'))[0] == v1['digest'], 'Work for %s is not back at v1' % gstep['scopes'])
-        require(not (skills_dir / 'anc-customer-profile').exists(), 'Work for %s still has anc-customer-profile' % gstep['scopes'])
+        require(tree_digest(safe(work, skills_dir / 'loom-onboard'))[0] == v1['digest'], 'Work for %s is not back at v1' % gstep['scopes'])
+        require(not (skills_dir / 'loom-customer-profile').exists(), 'Work for %s still has loom-customer-profile' % gstep['scopes'])
     for scope, step in journal['scopes'].items():
         work = homes[scope]
         if step.get('onboard_deployed') or step.get('profile_deployed'):
-            skills.deploy(scope, 'anc-onboard', 'v1', work)
+            skills.deploy(scope, 'loom-onboard', 'v1', work)
             with c.lock, c.db.transaction() as db:
-                db.execute("DELETE FROM skill_deployments WHERE scope=? AND skill='anc-customer-profile'", (scope,))
+                db.execute("DELETE FROM skill_deployments WHERE scope=? AND skill='loom-customer-profile'", (scope,))
                 c.audit(db, 'administrator', None, 'skill.deployment_rolled_back', {'scope': scope, 'stamp': stamp})
         with c.db.transaction() as db:
-            row = db.execute("SELECT version,digest FROM skill_deployments WHERE scope=? AND skill='anc-onboard'", (scope,)).fetchone()
-            profile_row = db.execute("SELECT 1 FROM skill_deployments WHERE scope=? AND skill='anc-customer-profile'", (scope,)).fetchone()
+            row = db.execute("SELECT version,digest FROM skill_deployments WHERE scope=? AND skill='loom-onboard'", (scope,)).fetchone()
+            profile_row = db.execute("SELECT 1 FROM skill_deployments WHERE scope=? AND skill='loom-customer-profile'", (scope,)).fetchone()
         require(row and (row['version'], row['digest']) == ('v1', v1['digest']) and not profile_row, 'Scope %s registration not back at v1' % scope)
 
 
@@ -328,18 +328,18 @@ def main():
     args = parser.parse_args()
     sys.path.insert(0, str(args.framework))
     sys.path.insert(0, str(Path(__file__).resolve().parent))      # cutover.py must sit beside this file (or on PYTHONPATH)
-    from anc.control import Control
-    from anc.skills import tree_digest
+    from loom.control import Control
+    from loom.skills import tree_digest
     config = json.loads((args.control / 'controller.json').read_bytes().decode('utf-8-sig'))
     homes = {scope: Path(config['scopes'][scope]['worker_home']) / 'Work' for scope in args.scopes}
-    sources = {'anc-onboard': args.onboard, 'anc-customer-profile': args.profile}
+    sources = {'loom-onboard': args.onboard, 'loom-customer-profile': args.profile}
     digests = {key: tree_digest(path)[0] for key, path in sources.items()}
     facts = precheck(ReadOnlyControl(args.control / 'runtime.sqlite'), homes, sources)   # no write lock while the controller runs
     print(json.dumps({'read_only': not args.execute, 'source_digests': digests, 'homes': {k: str(v) for k, v in homes.items()},
                       'v1_digest': facts['v1_row']['digest'], 'scopes': facts['scopes'], 'registered': facts['registered']}, ensure_ascii=False))
     if not args.execute:
         return
-    require(args.expect_onboard == digests['anc-onboard'] and args.expect_profile == digests['anc-customer-profile'],
+    require(args.expect_onboard == digests['loom-onboard'] and args.expect_profile == digests['loom-customer-profile'],
             'Source digests differ from the pinned values')
     import cutover                                              # reviewed stop/start/health helpers
     import sqlite3

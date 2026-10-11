@@ -7,8 +7,8 @@ import threading
 import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from anc.gateway import Inbox, ControllerIngress, configure_sdk_proxy, configure_sdk_websocket_proxy
-from anc.instance import InstanceLock
+from loom.gateway import Inbox, ControllerIngress, configure_sdk_proxy, configure_sdk_websocket_proxy
+from loom.instance import InstanceLock
 
 
 def ingress_line(receipt, payload, received_at):
@@ -44,7 +44,7 @@ def main():
     with InstanceLock(root / '.gateway.lock'):
         allow_private = None
         if config.get('private_contact_registry'):
-            from anc.private_contacts import admission
+            from loom.private_contacts import admission
             allow_private = lambda tenant, account, chat: admission(config['private_contact_registry'], app, tenant, account, chat)
         inbox = Inbox(root, app, config['allowed_chats'], allow_private=allow_private)
         deliver = ControllerIngress(config['controller_ingress'], secret)

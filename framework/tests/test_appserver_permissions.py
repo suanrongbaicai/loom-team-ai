@@ -12,7 +12,7 @@ import threading
 import time
 import unittest
 
-from anc.appserver import AppServer
+from loom.appserver import AppServer
 
 
 class BoundaryHandler(BaseHTTPRequestHandler):
@@ -37,7 +37,7 @@ class BoundaryHandler(BaseHTTPRequestHandler):
                 'namespace': 'functions', 'name': 'exec',
                 'input': 'if (typeof process !== "undefined" || typeof require !== "undefined") throw new Error("host runtime exposed"); '
                          'if (ALL_TOOLS.some(t => ["apply_patch", "exec_command", "view_image"].includes(t.name))) throw new Error("native runtime exposed"); '
-                         'text(await tools.anc_probe({text: "authorized result"}));'}
+                         'text(await tools.loom_probe({text: "authorized result"}));'}
         else:
             item = {'type': 'message', 'id': 'done', 'role': 'assistant',
                 'content': [{'type': 'output_text', 'text': 'offline complete'}]}
@@ -54,7 +54,7 @@ class BoundaryHandler(BaseHTTPRequestHandler):
         self.wfile.write(raw)
 
 
-@unittest.skipUnless(os.environ.get('ANC_CODEX_OFFLINE_BINARY'), 'real offline CLI test is opt-in')
+@unittest.skipUnless(os.environ.get('LOOM_CODEX_OFFLINE_BINARY'), 'real offline CLI test is opt-in')
 class PermissionsTests(unittest.TestCase):
     def test_no_native_environment_or_provisioning_and_dynamic_tool_still_works(self):
         for model, effort in [('example-model-a', 'medium'), ('example-model-b', 'high')]:
@@ -90,15 +90,15 @@ stream_max_retries=0
             'LOCALAPPDATA': str(root / 'profile' / 'local'), 'XDG_CACHE_HOME': str(root / 'cache'),
             'HTTP_PROXY': '', 'HTTPS_PROXY': '', 'ALL_PROXY': '', 'NO_PROXY': '127.0.0.1,localhost',
             'CODEX_APP_SERVER_DISABLE_MANAGED_CONFIG': '1', 'CODEX_EXEC_SERVER_URL': 'none'}
-        argv = [os.environ['ANC_CODEX_OFFLINE_BINARY'], 'app-server', '--stdio']
+        argv = [os.environ['LOOM_CODEX_OFFLINE_BINARY'], 'app-server', '--stdio']
         for override in ['features.hooks=false', 'features.shell_tool=false', 'features.plugins=false',
             'features.apps=false', 'features.multi_agent=false', 'features.code_mode=false',
             'features.view_image=false', 'web_search="disabled"',
-            'model_catalog_json=' + json.dumps(os.environ['ANC_OFFLINE_MODEL_CATALOG'])]:
+            'model_catalog_json=' + json.dumps(os.environ['LOOM_OFFLINE_MODEL_CATALOG'])]:
             argv.extend(['-c', override])
 
         def request(method, params):
-            if (method != 'item/tool/call' or params.get('tool') != 'anc_probe'
+            if (method != 'item/tool/call' or params.get('tool') != 'loom_probe'
                     or not bound.wait(5) or params.get('threadId') != ids['thread']
                     or params.get('turnId') != ids['turn']):
                 raise RuntimeError('Unbound capability')
@@ -109,12 +109,12 @@ stream_max_retries=0
         client = AppServer(argv, env, str(work), root / 'stderr.txt', lambda m,p: events.put((m,p)), request)
         try:
             started = client.rpc('thread/start', {'ephemeral': True, 'environments': [], 'cwd': str(work),
-                'developerInstructions': 'Only the supplied task-scoped ANC capability is available.',
+                'developerInstructions': 'Only the supplied task-scoped LOOM capability is available.',
                 'model': model, 'allowProviderModelFallback': False,
-                'permissions': 'anc-task', 'approvalPolicy': 'never',
-                'config': {'default_permissions': 'anc-task', 'permissions': {'anc-task': {'filesystem': {
+                'permissions': 'loom-task', 'approvalPolicy': 'never',
+                'config': {'default_permissions': 'loom-task', 'permissions': {'loom-task': {'filesystem': {
                     ':root': 'deny', ':minimal': 'read', str(work): 'write', str(home): 'deny'}}}},
-                'dynamicTools': [{'type': 'function', 'name': 'anc_probe', 'description': 'Synthetic scoped operation',
+                'dynamicTools': [{'type': 'function', 'name': 'loom_probe', 'description': 'Synthetic scoped operation',
                     'inputSchema': {'type':'object', 'properties':{'text':{'type':'string'}},
                                     'required':['text'], 'additionalProperties':False}}]})
             self.assertEqual(started['model'], model)
@@ -143,7 +143,7 @@ stream_max_retries=0
             for body in server.calls:
                 catalog = json.dumps([item.get('tools', []) for item in body['input']
                                       if item.get('type') == 'additional_tools'])
-                self.assertIn('anc_probe(args:', catalog)
+                self.assertIn('loom_probe(args:', catalog)
                 for native in ('apply_patch', 'exec_command', 'shell_command', 'view_image'):
                     self.assertNotIn('### `' + native + '`', catalog)
                 self.assertNotIn(instruction_canary, json.dumps(body))

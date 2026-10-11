@@ -2,10 +2,10 @@ import copy
 from pathlib import Path
 import unittest
 
-from anc.feishu_reports import CloudFailure
-from anc.policy import Denied
-from anc.report_build import build
-from anc.web_reports import WebReports
+from loom.feishu_reports import CloudFailure
+from loom.policy import Denied
+from loom.report_build import build
+from loom.web_reports import WebReports
 from tests.test_web_reports import MemoryPublisher
 
 
@@ -102,14 +102,14 @@ class ReportBuildTests(unittest.TestCase):
         self.assertEqual(self.creates(),0)
 
     def test_rpc_requires_full_rules_then_exposes_composed_tool(self):
-        from anc.rpc import RuntimeAPI
-        from anc.skills import Skills
-        from anc.mcp import TOOLS
+        from loom.rpc import RuntimeAPI
+        from loom.skills import Skills
+        from loom.mcp import TOOLS
         api=RuntimeAPI(self.p.c,Path.cwd(),b'x'*32,report_leaf=self.p.leaf,cloud_reports=self.p.cloud)
         token=api.issue(self.p.a)
         args={'id':'composed','spec':self.p.spec,'backup_format':'sheet'}
         with self.assertRaises(Denied):api.call(token,'report_build',args)
-        for name in ('anc-work-records','anc-onboard','anc-reports'):
+        for name in ('loom-work-records','loom-onboard','loom-reports'):
             Skills(self.p.c).publish(name,'v1',Path('skills')/name,'fixture')
             Skills(self.p.c).deploy(self.p.a.scope,name,'v1',self.p.root/'work')
         api.rules.load(self.p.a,'SessionStart','composed-report-test')

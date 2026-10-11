@@ -6,10 +6,10 @@ from pathlib import Path
 import sqlite3
 import unittest
 
-from anc.human_messages import context
-from anc.policy import Denied
-from anc.wechat_capture import WeChatCapture
-from anc.wechat_consent import CaptureConsent
+from loom.human_messages import context
+from loom.policy import Denied
+from loom.wechat_capture import WeChatCapture
+from loom.wechat_consent import CaptureConsent
 from tests import test_platform_decisions as fixtures
 from tools.wechat_capture_entry import resolve_selection
 

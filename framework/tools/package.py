@@ -7,10 +7,10 @@ import zipfile
 root = Path(__file__).resolve().parents[1]
 out = root.parent / 'artifacts'
 out.mkdir(exist_ok=True)
-target = out / 'anc-framework-dev1.zip'
+target = out / 'loom-framework-dev1.zip'
 files = []
 with zipfile.ZipFile(target, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
-    for top in ('anc', 'rules', 'skills', 'tests', 'tools'):
+    for top in ('loom', 'rules', 'skills', 'tests', 'tools'):
         for path in sorted((root / top).rglob('*')):
             if path.is_file() and '__pycache__' not in path.parts and path.suffix != '.pyc':
                 rel = path.relative_to(root).as_posix()

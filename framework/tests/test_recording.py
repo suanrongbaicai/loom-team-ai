@@ -2,8 +2,8 @@ import copy
 import json
 import unittest
 
-from anc.control import digest
-from anc.policy import Denied
+from loom.control import digest
+from loom.policy import Denied
 from tests import test_runtime
 
 
@@ -141,7 +141,7 @@ class RecordingTests(unittest.TestCase):
 
     def test_new_stage_change_requires_new_receipt_and_failed_save_cannot_send(self):
         from unittest.mock import patch
-        from anc.control import RecoveryRequired
+        from loom.control import RecoveryRequired
         token=self.ready()
         self.api.call(token,'reply',{'id':'progress','text':'开始核对。','finish':False,'recording':self.declaration()})
         self.api.call(token,'record',{'id':'later','kind':'context','text':'新增事实','commit_id':'later-commit'})
@@ -171,7 +171,7 @@ class RecordingTests(unittest.TestCase):
 
     def test_committed_action_mirror_failure_is_recoverable_without_false_rollback(self):
         from pathlib import Path
-        from anc.control import Control
+        from loom.control import Control
         token=self.ready()
         normal=self.c.db.after_commit
         def unavailable(rows):raise OSError('simulated disk unavailable after SQL commit')

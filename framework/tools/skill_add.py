@@ -5,7 +5,7 @@ into the Work directory and registers the deployment inside one write transactio
 other.  The tool refuses to run while any task or execution is active, takes a database backup first, never writes a
 skill.loaded audit (only a real task's trusted hook does), and on failure removes only what this run created.
 
-    python skill_add.py --framework F --control C --evidence E --skill-dir D --key anc-business --version v1 \
+    python skill_add.py --framework F --control C --evidence E --skill-dir D --key loom-business --version v1 \
         --scopes owner-private owner-new-private member-private --approval "<evidence text>" [--expect-digest H] [--execute]
 Without --execute it only reads and prints the facts."""
 import argparse
@@ -48,7 +48,7 @@ def safe_target(work, key):
 
 def facts(db_path, homes, key, version, source):
     """Read-only. Returns what is registered/deployed now; raises when the target scopes are not in a clean starting state."""
-    from anc.skills import tree_digest
+    from loom.skills import tree_digest
     digest = tree_digest(source)[0]
     with closing(sqlite3.connect(Path(db_path).absolute().as_uri() + '?mode=ro', uri=True, timeout=3)) as db:
         db.row_factory = sqlite3.Row
@@ -73,7 +73,7 @@ def facts(db_path, homes, key, version, source):
 
 
 def add(c, homes, key, version, source, approval, journal_path):
-    from anc.skills import Skills, tree_digest
+    from loom.skills import Skills, tree_digest
     skills = Skills(c)
     before = facts(c.root / 'runtime.sqlite', homes, key, version, source)
     require(before['active_tasks'] == before['open_executions'] == 0, 'Active work; do not deploy now')
@@ -139,7 +139,7 @@ def main(argv=None):
     parser.add_argument('--execute', action='store_true')
     args = parser.parse_args(argv)
     sys.path.insert(0, str(args.framework))
-    from anc.control import Control
+    from loom.control import Control
     config = json.loads((args.control / 'controller.json').read_bytes().decode('utf-8-sig'))
     homes = {scope: Path(config['scopes'][scope]['worker_home']) / 'Work' for scope in args.scopes}
     found = facts(args.control / 'runtime.sqlite', homes, args.key, args.version, args.skill_dir)

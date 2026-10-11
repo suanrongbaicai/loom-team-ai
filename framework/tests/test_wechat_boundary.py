@@ -2,7 +2,7 @@ import hashlib
 import sqlite3
 import unittest
 
-from anc.wechat_boundary import BoundedConnection, CaptureWindow, CaptureBoundaryError
+from loom.wechat_boundary import BoundedConnection, CaptureWindow, CaptureBoundaryError
 
 
 class WeChatBoundaryTests(unittest.TestCase):
@@ -38,7 +38,7 @@ class WeChatBoundaryTests(unittest.TestCase):
         rows=self.conn.execute(self.query()).fetchall()
         self.assertEqual(materialized,[100,150,199])
         self.assertEqual([r['create_time'] for r in rows],materialized)
-        self.assertTrue(all(r['_anc_shard']=='message/test.db' for r in rows))
+        self.assertTrue(all(r['_loom_shard']=='message/test.db' for r in rows))
         self.assertEqual(self.reads[0]['rows'],3)
 
     def test_other_chat_and_changed_query_never_return_rows(self):
@@ -76,7 +76,7 @@ class WeChatBoundaryTests(unittest.TestCase):
         self.raw.execute('PRAGMA query_only=ON')
         rows=self.conn.execute(self.query()).fetchall()
         self.assertEqual(len(rows),3)
-        self.assertTrue(all(r['_anc_sender_username']=='correct-user' for r in rows))
+        self.assertTrue(all(r['_loom_sender_username']=='correct-user' for r in rows))
         self.assertEqual(self.reads[0]['rows'],3)
 
     def test_missing_or_invalid_window_fails_before_access(self):

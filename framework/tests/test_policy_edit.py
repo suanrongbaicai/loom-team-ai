@@ -5,8 +5,8 @@ import sqlite3
 import tempfile
 import unittest
 
-from anc.control import Control
-from anc.instance import InstanceLock
+from loom.control import Control
+from loom.instance import InstanceLock
 from tests.test_control import fixture
 from tools import policy_edit as pe
 

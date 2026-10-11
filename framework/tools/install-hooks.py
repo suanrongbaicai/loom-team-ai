@@ -24,7 +24,7 @@ def main():
     if not re.fullmatch(r'[A-Za-z]:\\[A-Za-z0-9_\\.\-]+', python):
         raise RuntimeError('Runtime executable must use a shell-neutral path')
     command = python + ' -B -X utf8 "' + str(framework / 'tools/hook_entry.py') + '"'
-    lines = ['# ANC managed hook entry. Runtime and data reside on E:.',
+    lines = ['# LOOM managed hook entry. Runtime and data reside on E:.',
              '# Hook dispatcher only acts for actual Windows usernames prefixed loom_.',
              '# Other clients keep their existing feature and hook-source settings.',
              '[hooks]', "windows_managed_dir = '" + str(framework / 'tools') + "'"]

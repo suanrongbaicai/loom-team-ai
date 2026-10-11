@@ -5,9 +5,9 @@ import tempfile
 import unittest
 import unittest.mock
 
-from anc.control import Control
-from anc.scheduler import Scheduler
-from anc import usage
+from loom.control import Control
+from loom.scheduler import Scheduler
+from loom import usage
 from tests.test_control import fixture
 
 
@@ -89,7 +89,7 @@ class UsageTests(unittest.TestCase):
         scheduler.c = self.c
         scheduler.record_usage({'task': 't1', 'job_path': str(self.job), 'output_dir': str(self.root / 'missing-dir')})   # no events file: nothing to record, no error
         self.assertEqual(self.rows('usage_log'), [])
-        with unittest.mock.patch('anc.usage.record', side_effect=RuntimeError('boom')):
+        with unittest.mock.patch('loom.usage.record', side_effect=RuntimeError('boom')):
             scheduler.record_usage({'task': 't1', 'job_path': str(self.job), 'output_dir': str(self.out)})
         with self.c.db.transaction() as db:
             actions = [r[0] for r in db.execute("SELECT action FROM audit WHERE task='t1'")]
@@ -177,7 +177,7 @@ class UsageTests(unittest.TestCase):
                 for entry in self.inner:
                     yielded.append(entry.name)
                     yield entry
-        with unittest.mock.patch('anc.usage.os.scandir', Counting):
+        with unittest.mock.patch('loom.usage.os.scandir', Counting):
             self.assertEqual(usage.recent_session_files(self.home / 'sessions', budget=10), [])        # more entries than the budget in ONE folder: nothing returned
         self.assertLessEqual(len(yielded), 12)                                                       # and iteration stopped at the limit (2 parents + budget), it did not read all 30
         self.assertEqual(len(usage.recent_session_files(self.home / 'sessions', budget=100)), 3)      # with room it still finds the newest three

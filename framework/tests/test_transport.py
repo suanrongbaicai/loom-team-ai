@@ -7,9 +7,9 @@ import tempfile
 import threading
 import unittest
 
-from anc.control import Control
-from anc.policy import Denied
-from anc.transport import LocalTransport, Sender
+from loom.control import Control
+from loom.policy import Denied
+from loom.transport import LocalTransport, Sender
 from tests.test_control import fixture
 
 
@@ -113,8 +113,8 @@ class TransportTests(unittest.TestCase):
         self.assertEqual(self.action_receipt('reply.unknown')['reason'], 'controller restarted after network attempt')
 
     def test_background_reply_keeps_original_bot_with_multiple_scope_bots(self):
-        from anc.tasks import Tasks
-        from anc.policy import Context
+        from loom.tasks import Tasks
+        from loom.policy import Context
         self.policy['scopes']['alice-private']['transport']['apps'].append('app-b')
         self.c.set_policy(self.policy, 'multiple bots')
         original = self.c.task('alice', 'alice-private', event='accepted-message')
@@ -137,7 +137,7 @@ class TransportTests(unittest.TestCase):
                 pass
             def do_POST(self):
                 body = self.rfile.read(int(self.headers['Content-Length']))
-                seen.append((self.path, body, self.headers['X-ANC-Signature']))
+                seen.append((self.path, body, self.headers['X-LOOM-Signature']))
                 if self.redirect:
                     self.send_response(307)
                     self.send_header('Location', '/unexpected')
@@ -150,7 +150,7 @@ class TransportTests(unittest.TestCase):
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
         try:
-            transport = LocalTransport(f'http://127.0.0.1:{server.server_port}/anc/send', secret)
+            transport = LocalTransport(f'http://127.0.0.1:{server.server_port}/loom/send', secret)
             self.assertEqual(transport.send('a', 'c', 'id', '保存的原文'), 'platform-2')
             body = seen[0][1]
             self.assertEqual(seen[0][2], hmac.new(secret, body, hashlib.sha256).hexdigest())
@@ -158,15 +158,15 @@ class TransportTests(unittest.TestCase):
             Handler.redirect = True
             with self.assertRaises(Denied):
                 transport.send('a', 'c', 'id2', '另一条')
-            self.assertEqual([item[0] for item in seen], ['/anc/send', '/anc/send'])
+            self.assertEqual([item[0] for item in seen], ['/loom/send', '/loom/send'])
         finally:
             server.shutdown()
             server.server_close()
             thread.join()
 
     def test_invalid_endpoints_rejected(self):
-        for endpoint in ('http:///anc/send', 'http://example.org/anc/send', 'http://127.0.0.1/other',
-                         'http://x:y@127.0.0.1/anc/send', 'http://127.0.0.1/anc/send?x=y'):
+        for endpoint in ('http:///loom/send', 'http://example.org/loom/send', 'http://127.0.0.1/other',
+                         'http://x:y@127.0.0.1/loom/send', 'http://127.0.0.1/loom/send?x=y'):
             with self.subTest(endpoint=endpoint), self.assertRaises(Denied):
                 LocalTransport(endpoint, b'x' * 32)
 

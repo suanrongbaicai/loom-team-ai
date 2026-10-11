@@ -8,8 +8,8 @@ import time
 
 root = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(root/'Framework'))
-from anc.appcontainer import private_desktop, identity, close_desktop, close_station
-from anc.commands import no_links, save_journal
+from loom.appcontainer import private_desktop, identity, close_desktop, close_station
+from loom.commands import no_links, save_journal
 
 
 def main():
@@ -20,7 +20,7 @@ def main():
     job = json.loads(path.read_text(encoding='utf-8'))
     if not re.fullmatch(r'cmd-[0-9a-f]{32}', job['id']) or path.name != job['id']+'.json':
         raise ValueError('Command job required')
-    expected = 'ANC.Command.'+job['id']
+    expected = 'LOOM.Command.'+job['id']
     container = job['desktop_container']
     if container['name'] != expected or container['sid'] != identity(expected):
         raise ValueError('Container identity mismatch')

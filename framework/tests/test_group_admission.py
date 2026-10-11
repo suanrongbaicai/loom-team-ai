@@ -3,14 +3,14 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from anc.control import Control
-from anc.gateway import Inbox
-from anc.group_admission import GroupAdmission, group_scope_id
-from anc.identity_learning import learn
-from anc.membership import AudienceUnavailable, Membership
-from anc.policy import Denied
-from anc.rpc import RuntimeAPI
-from anc.runtime_scopes import resolve
+from loom.control import Control
+from loom.gateway import Inbox
+from loom.group_admission import GroupAdmission, group_scope_id
+from loom.identity_learning import learn
+from loom.membership import AudienceUnavailable, Membership
+from loom.policy import Denied
+from loom.rpc import RuntimeAPI
+from loom.runtime_scopes import resolve
 
 TENANT = 'T1'
 
@@ -43,7 +43,7 @@ class GroupTests(unittest.TestCase):
         self.c.set_policy(state, 'synthetic')
         with self.c.db.transaction() as db:
             for scope in ('alice-private', 'bob-private'):
-                db.execute("INSERT INTO skill_deployments VALUES(?,'anc-work-records','v1','digest-1','deployed')", (scope,))
+                db.execute("INSERT INTO skill_deployments VALUES(?,'loom-work-records','v1','digest-1','deployed')", (scope,))
         self.unions = {'alice': 'U_A', 'bob': 'U_B', 'carol': 'U_C'}
         self.client = FakeClient({'oc_group': ['U_A', 'U_B']})
         self.membership = Membership(self.c, {'bot1': self.client})
@@ -100,7 +100,7 @@ class GroupTests(unittest.TestCase):
         self.assertTrue(self.policy()['scopes'][sid]['membership_verified'])
         with self.c.db.transaction() as db:       # a group works with the same approved methods as the speaker's own scope
             self.assertEqual([tuple(r) for r in db.execute('SELECT skill,version,digest FROM skill_deployments WHERE scope=?', (sid,))],
-                             [('anc-work-records', 'v1', 'digest-1')])
+                             [('loom-work-records', 'v1', 'digest-1')])
         result = self.api.accept(envelope)
         with self.c.db.transaction() as db:
             task = db.execute('SELECT * FROM tasks WHERE id=?', (result['task'],)).fetchone()
@@ -169,7 +169,7 @@ class GroupTests(unittest.TestCase):
     def test_a_group_task_runs_with_the_speakers_own_worker(self):
         self.learn_everyone()
         sid = self.groups.ensure(self.event('bot1', 'oa1', 'U_A', 'oc_group', 'group', 'g1'))
-        from anc.policy import Context
+        from loom.policy import Context
         configured = {'alice-private': {'worker_home': 'A', 'os_account': 'acct-a'}, 'bob-private': {'worker_home': 'B', 'os_account': 'acct-b'}}
         self.assertEqual(resolve(configured, self.c, Context('alice', sid, 0, 't'))['os_account'], 'acct-a')
         self.assertEqual(resolve(configured, self.c, Context('bob', sid, 0, 't'))['os_account'], 'acct-b')
@@ -193,7 +193,7 @@ class GroupTests(unittest.TestCase):
 
     # ---- O9: colleagues added to an already admitted group are registered as team members (user decision 2026-10-03) ----
     def admitted_group(self):
-        from anc.basic_members import BasicMembers
+        from loom.basic_members import BasicMembers
         self.learn_everyone()
         self.groups = GroupAdmission(self.c, self.membership, BasicMembers(self.c))
         self.groups.FOLLOW_SECONDS = 0
@@ -236,7 +236,7 @@ class GroupTests(unittest.TestCase):
             self.membership.verify(sid, force=True)                 # the audience check still refuses: nothing is disclosed
 
     def test_registration_waits_for_an_idle_system_and_does_not_lose_the_message(self):
-        from anc.basic_members import Deferred
+        from loom.basic_members import Deferred
         sid = self.admitted_group()
         self.client.groups['oc_group'] = ['U_A', 'U_B', 'U_LATE']
         with self.c.db.transaction() as db:

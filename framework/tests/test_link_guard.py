@@ -4,9 +4,9 @@ import tempfile
 import types
 import unittest
 
-from anc.control import Control
-from anc.link_guard import guard, mismatches, trusted_links
-from anc.policy import Denied
+from loom.control import Control
+from loom.link_guard import guard, mismatches, trusted_links
+from loom.policy import Denied
 from tests.test_control import fixture
 
 ORIGIN = 'https://reports.example.invalid'

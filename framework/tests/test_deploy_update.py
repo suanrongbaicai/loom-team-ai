@@ -38,13 +38,13 @@ class DeployTests(unittest.TestCase):
         self.base = Path(self.temp.name).absolute()
         self.live, self.new, self.evidence = self.base / 'live', self.base / 'new', self.base / 'evidence'
         for root, version in ((self.live, 'old'), (self.new, 'new')):
-            (root / 'anc').mkdir(parents=True)
-            (root / 'anc' / 'a.py').write_text('VALUE = "%s"\n' % version)
-            (root / 'anc' / 'same.py').write_text('SAME = 1\n')
+            (root / 'loom').mkdir(parents=True)
+            (root / 'loom' / 'a.py').write_text('VALUE = "%s"\n' % version)
+            (root / 'loom' / 'same.py').write_text('SAME = 1\n')
             (root / 'rules').mkdir()
             (root / 'rules' / 'AGENTS.md').write_text('# %s\n' % version)
-        (self.new / 'anc' / 'added.py').write_text('ADDED = 1\n')
-        (self.live / 'anc' / 'live_only.py').write_text('LIVE = 1\n')
+        (self.new / 'loom' / 'added.py').write_text('ADDED = 1\n')
+        (self.live / 'loom' / 'live_only.py').write_text('LIVE = 1\n')
         (self.live / 'controller.json').write_text('SECRET')          # outside the allowed set: never touched
         (self.live / 'skills').mkdir()
         (self.live / 'skills' / 'x.md').write_text('skill')
@@ -61,20 +61,20 @@ class DeployTests(unittest.TestCase):
     def test_plan_lists_changed_added_and_live_only_without_touching_anything(self):
         found = du.plan(self.new, self.live)
         self.assertEqual((found['changed'], found['added'], found['only_in_live']),
-                         (['anc/a.py', 'rules/AGENTS.md'], ['anc/added.py'], ['anc/live_only.py']))
-        self.assertEqual((self.live / 'anc' / 'a.py').read_text(), 'VALUE = "old"\n')
+                         (['loom/a.py', 'rules/AGENTS.md'], ['loom/added.py'], ['loom/live_only.py']))
+        self.assertEqual((self.live / 'loom' / 'a.py').read_text(), 'VALUE = "old"\n')
 
     def test_apply_stops_backs_up_replaces_verifies_and_restarts(self):
         services = FakeServices()
         report = du.apply(self.new, self.live, self.evidence, services, self.db, sleep=lambda s: None)
         self.assertEqual(report['state'], 'updated')
         self.assertEqual(services.events, ['stop', 'start'])
-        self.assertEqual((self.live / 'anc' / 'a.py').read_text(), 'VALUE = "new"\n')
-        self.assertTrue((self.live / 'anc' / 'added.py').exists())
-        self.assertEqual((self.evidence / 'before' / 'anc' / 'a.py').read_text(), 'VALUE = "old"\n')
+        self.assertEqual((self.live / 'loom' / 'a.py').read_text(), 'VALUE = "new"\n')
+        self.assertTrue((self.live / 'loom' / 'added.py').exists())
+        self.assertEqual((self.evidence / 'before' / 'loom' / 'a.py').read_text(), 'VALUE = "old"\n')
         self.assertEqual((self.live / 'controller.json').read_text(), 'SECRET')
         self.assertEqual((self.live / 'skills' / 'x.md').read_text(), 'skill')
-        self.assertTrue((self.live / 'anc' / 'live_only.py').exists())          # never deletes
+        self.assertTrue((self.live / 'loom' / 'live_only.py').exists())          # never deletes
         self.assertEqual(du.apply(self.new, self.live, self.base / 'e2', FakeServices(), self.db)['state'], 'nothing to do')
 
     def test_a_busy_system_is_refused_before_anything_stops(self):
@@ -92,13 +92,13 @@ class DeployTests(unittest.TestCase):
             du.apply(self.new, self.live, self.evidence, services, self.db)
 
     def test_a_syntax_error_rolls_everything_back_and_restarts(self):
-        (self.new / 'anc' / 'a.py').write_text('def broken(:\n')
+        (self.new / 'loom' / 'a.py').write_text('def broken(:\n')
         services = FakeServices()
         with self.assertRaises(du.Refused) as caught:
             du.apply(self.new, self.live, self.evidence, services, self.db, sleep=lambda s: None)
         self.assertIn('rollback complete', str(caught.exception))
-        self.assertEqual((self.live / 'anc' / 'a.py').read_text(), 'VALUE = "old"\n')
-        self.assertFalse((self.live / 'anc' / 'added.py').exists())
+        self.assertEqual((self.live / 'loom' / 'a.py').read_text(), 'VALUE = "old"\n')
+        self.assertFalse((self.live / 'loom' / 'added.py').exists())
         self.assertEqual(services.events, ['stop', 'start'])
         self.assertTrue((self.evidence / 'rollback.json').exists())
 
@@ -169,8 +169,8 @@ class RollbackOrderTests(DeployTests):
 class SchemaRollbackTests(DeployTests):
     def test_a_failure_after_the_new_code_migrated_the_database_puts_the_schema_back_too(self):
         import shutil
-        (self.new / 'anc').mkdir(exist_ok=True)
-        shutil.copy(Path(__file__).resolve().parents[1] / 'anc' / 'database.py', self.new / 'anc' / 'database.py')
+        (self.new / 'loom').mkdir(exist_ok=True)
+        shutil.copy(Path(__file__).resolve().parents[1] / 'loom' / 'database.py', self.new / 'loom' / 'database.py')
         with contextlib.closing(sqlite3.connect(self.db)) as db:
             db.execute('PRAGMA user_version=1')
             db.commit()

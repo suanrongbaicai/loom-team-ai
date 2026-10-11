@@ -25,9 +25,9 @@ import traceback
 
 TOOLS = Path(__file__).resolve().parent
 sys.path.insert(0, str(TOOLS.parent))
-from anc.database import LATEST, SCHEMA, Database  # noqa: E402
-from anc.instance import InstanceBusy, InstanceLock  # noqa: E402
-from anc.policy import Policy  # noqa: E402
+from loom.database import LATEST, SCHEMA, Database  # noqa: E402
+from loom.instance import InstanceBusy, InstanceLock  # noqa: E402
+from loom.policy import Policy  # noqa: E402
 
 DB_NAMES = ('runtime.sqlite', 'runtime.sqlite-wal', 'runtime.sqlite-shm')
 KEEP_TABLES = ('policy', 'skills', 'skill_deployments')
@@ -104,8 +104,8 @@ def list_tree(directory, refusals):
 
 
 @contextlib.contextmanager
-def scratch(anc_root):
-    base = Path(anc_root) / '.wipe-tmp'
+def scratch(loom_root):
+    base = Path(loom_root) / '.wipe-tmp'
     base.mkdir(exist_ok=True)
     path = Path(tempfile.mkdtemp(dir=base))
     try:
@@ -129,8 +129,8 @@ def snapshot_db(db_path, tmp):
     return Path(tmp) / 'runtime.sqlite'
 
 
-def read_kept(db_path, anc_root):
-    with scratch(anc_root) as tmp, contextlib.closing(sqlite3.connect(snapshot_db(db_path, tmp))) as db:
+def read_kept(db_path, loom_root):
+    with scratch(loom_root) as tmp, contextlib.closing(sqlite3.connect(snapshot_db(db_path, tmp))) as db:
         policy = db.execute('SELECT body FROM policy WHERE singleton=1').fetchone()
         if not policy:
             raise Refused('Source policy missing; nothing safe to carry over')
@@ -154,29 +154,29 @@ def stat_key(path):
     return [info.st_size, info.st_mtime_ns]
 
 
-def protected_fingerprint(anc_root, control, gateways):
+def protected_fingerprint(loom_root, control, gateways):
     """Size and mtime only: proves configuration and logins were not touched without ever reading them."""
     paths = [control / 'controller.json', control.parent / 'worker-credentials.json']
     for gateway in gateways:
         paths += [Path(gateway).parent / 'gateway.json', Path(gateway).parent / 'ingress.key']
-    workers = Path(anc_root) / 'Workers'
+    workers = Path(loom_root) / 'Workers'
     if workers.is_dir():
         paths += [w / 'CodexHome' / 'auth.json' for w in sorted(workers.iterdir())]
     return {str(p): stat_key(p) for p in paths if p.is_file()}
 
 
-def build_plan(anc_root, control, include=(), remap=None, personnel_dir=None):
+def build_plan(loom_root, control, include=(), remap=None, personnel_dir=None):
     """remap=(production_prefix, rehearsal_prefix) is for rehearsal copies only: the copied policy still names production
     paths, and clearing must happen under the copy.  Roots left outside the control root are refused either way."""
-    anc_root, control = Path(anc_root), Path(control)
+    loom_root, control = Path(loom_root), Path(control)
     refusals = []
-    for path in (anc_root, control):
+    for path in (loom_root, control):
         link = chain_link(path)
         if link:
             refusals.append('Link on path chain: ' + link)
     if remap:
         old = remap[0]
-        for path in (anc_root, control):
+        for path in (loom_root, control):
             if os.path.normcase(os.path.abspath(path)) == os.path.normcase(os.path.abspath(old)) or inside(old, path):
                 refusals.append('Rehearsal map may not point at the production tree itself: ' + str(path))
     for name in DB_NAMES:
@@ -186,7 +186,7 @@ def build_plan(anc_root, control, include=(), remap=None, personnel_dir=None):
         refusals.append('runtime.sqlite not found under the control root')
     if refusals:
         return {'refusals': refusals}
-    policy_body, _, _ = read_kept(control / 'runtime.sqlite', anc_root)
+    policy_body, _, _ = read_kept(control / 'runtime.sqlite', loom_root)
     state = json.loads(policy_body)
     scope_roots = {}
     for name, scope in sorted(state.get('scopes', {}).items()):
@@ -200,12 +200,12 @@ def build_plan(anc_root, control, include=(), remap=None, personnel_dir=None):
     clear = [control / n for n in DEFAULT_CLEAR + tuple(n for n in include if n in OPTIONAL_CLEAR)]
     clear += [Path(r) for r in scope_roots.values()]
     entries = []
-    jobs = anc_root / 'Jobs'
+    jobs = loom_root / 'Jobs'
     if jobs.is_dir():
         clear += [p for p in sorted(jobs.iterdir()) if p.is_dir() and not is_link(p)]
         entries += [p for p in sorted(jobs.iterdir()) if p.is_file() and not is_link(p)]
         refusals += ['Linked entry refused: ' + str(p) for p in jobs.iterdir() if is_link(p)]
-    workers = anc_root / 'Workers'
+    workers = loom_root / 'Workers'
     if workers.is_dir():
         clear += [p / 'Outputs' for p in sorted(workers.iterdir()) if (p / 'Outputs').exists()]
     gateway_dirs = sorted(control.parent.glob('Gateway*'))
@@ -218,7 +218,7 @@ def build_plan(anc_root, control, include=(), remap=None, personnel_dir=None):
             gateways.append(directory / 'inbox.sqlite')
     files, dirs, clear_dirs = [], [], []
     for directory in clear:
-        if not inside(anc_root, directory):
+        if not inside(loom_root, directory):
             refusals.append('Outside the allowed root: ' + str(directory))
             continue
         link = chain_link(directory)
@@ -250,11 +250,11 @@ def build_plan(anc_root, control, include=(), remap=None, personnel_dir=None):
             refusals.append('Link on path chain: ' + chain_link(path))
     for path in sorted(set(entries)):
         files.append({'path': str(path), 'bytes': path.stat().st_size, 'sha256': file_sha(path)})
-    return {'refusals': refusals, 'anc_root': str(anc_root), 'control': str(control), 'scope_roots': scope_roots,
+    return {'refusals': refusals, 'loom_root': str(loom_root), 'control': str(control), 'scope_roots': scope_roots,
             'clear_dirs': clear_dirs, 'empty_dirs': sorted(str(d) for d in dirs), 'files': files,
             'db_files': [str(p) for p in db_files], 'gateway_inboxes': [str(g) for g in gateways],
             'gateway_files': [str(p) for p in gw_files], 'personnel': personnel, 'personnel_replace': replace,
-            'protected': protected_fingerprint(anc_root, control, gateways),
+            'protected': protected_fingerprint(loom_root, control, gateways),
             'policy_sha256': sha(policy_body.encode()), 'rehearsal': bool(remap),
             'created': time.strftime('%Y-%m-%dT%H:%M:%S')}
 
@@ -268,7 +268,7 @@ def plan_summary(plan):
 
 
 def rel(plan, path):
-    return Path(path).relative_to(plan['anc_root'])
+    return Path(path).relative_to(plan['loom_root'])
 
 
 def port_listening(port):
@@ -282,7 +282,7 @@ def revalidate(plan):
     problems = []
     if plan.get('refusals'):
         problems += plan['refusals']
-    for path in [plan['anc_root'], plan['control'], Path(plan['control']) / '.controller.lock'] + plan['clear_dirs'] + plan['db_files'] + plan['gateway_files'] + list(plan['personnel'].values()):
+    for path in [plan['loom_root'], plan['control'], Path(plan['control']) / '.controller.lock'] + plan['clear_dirs'] + plan['db_files'] + plan['gateway_files'] + list(plan['personnel'].values()):
         link = chain_link(path)
         if link:
             problems.append('Link on path chain: ' + link)
@@ -333,7 +333,7 @@ def read_state(dest):
 def backup(plan, dest, *, listening=port_listening):
     revalidate(plan)
     dest = Path(dest)
-    evidence = Path(plan['anc_root']) / 'Evidence'
+    evidence = Path(plan['loom_root']) / 'Evidence'
     if not inside(evidence, dest):
         raise Refused('Backup must live under the Evidence directory of the root')
     link = chain_link(dest)
@@ -357,23 +357,23 @@ def backup(plan, dest, *, listening=port_listening):
             if a != file_sha(target):
                 raise Refused('Backup copy differs from its source: ' + source)
             manifest.append({'path': source, 'bytes': target.stat().st_size, 'sha256': a})
-        body, skills, deployments = read_kept(dest / 'data' / rel(plan, plan['control']) / 'runtime.sqlite', plan['anc_root'])
+        body, skills, deployments = read_kept(dest / 'data' / rel(plan, plan['control']) / 'runtime.sqlite', plan['loom_root'])
         if sha(body.encode()) != plan['policy_sha256']:
             raise Refused('Policy changed between plan and backup')
-        result = {'created': time.strftime('%Y-%m-%dT%H:%M:%S'), 'anc_root': plan['anc_root'], 'control': plan['control'],
+        result = {'created': time.strftime('%Y-%m-%dT%H:%M:%S'), 'loom_root': plan['loom_root'], 'control': plan['control'],
                   'files': manifest, 'empty_dirs': plan['empty_dirs'], 'policy_sha256': plan['policy_sha256'],
                   'skills': skills, 'deployments': deployments, 'plan': plan_summary(plan),
-                  'inbox_sql': inbox_sql(plan['gateway_inboxes'], plan['anc_root'])}
+                  'inbox_sql': inbox_sql(plan['gateway_inboxes'], plan['loom_root'])}
         (dest / 'manifest.json').write_text(json.dumps(result, ensure_ascii=False, indent=1), encoding='utf-8')
         write_state(dest, 'backed-up')
     return {'files': len(manifest), 'bytes': sum(m['bytes'] for m in manifest), 'policy_sha256': plan['policy_sha256'],
             'manifest_sha256': file_sha(dest / 'manifest.json')}
 
 
-def inbox_sql(inboxes, anc_root):
+def inbox_sql(inboxes, loom_root):
     out = {}
     for inbox in inboxes:
-        with scratch(anc_root) as tmp:
+        with scratch(loom_root) as tmp:
             for suffix in ('', '-wal', '-shm'):
                 if Path(inbox + suffix).exists():
                     shutil.copy2(inbox + suffix, Path(tmp) / ('inbox.sqlite' + suffix))
@@ -386,13 +386,13 @@ def inbox_sql(inboxes, anc_root):
 
 def load_manifest(plan, dest):
     manifest = json.loads((Path(dest) / 'manifest.json').read_text(encoding='utf-8'))
-    if manifest['anc_root'] != plan['anc_root'] or manifest['control'] != plan['control']:
+    if manifest['loom_root'] != plan['loom_root'] or manifest['control'] != plan['control']:
         raise Refused('Backup belongs to a different root')
     expected = {f['path'] for f in plan['files']} | set(plan['db_files']) | set(plan['gateway_files']) | set(plan['personnel'].values())
     if {m['path'] for m in manifest['files']} != expected:
         raise Refused('Backup file set differs from the plan; take a new backup')
     for item in manifest['files']:
-        copy = Path(dest) / 'data' / Path(item['path']).relative_to(manifest['anc_root'])
+        copy = Path(dest) / 'data' / Path(item['path']).relative_to(manifest['loom_root'])
         if not copy.is_file() or file_sha(copy) != item['sha256']:
             raise Refused('Backup file missing or altered: ' + item['path'])
     if manifest['policy_sha256'] != plan['policy_sha256']:
@@ -432,7 +432,7 @@ def new_database(plan, manifest, dest):
     for suffix in ('', '-wal', '-shm'):
         with contextlib.suppress(FileNotFoundError):
             Path(str(new) + suffix).unlink()
-    body, skills, deployments = read_kept(Path(dest) / 'data' / rel(plan, control) / 'runtime.sqlite', plan['anc_root'])
+    body, skills, deployments = read_kept(Path(dest) / 'data' / rel(plan, control) / 'runtime.sqlite', plan['loom_root'])
     if sha(body.encode()) != manifest['policy_sha256']:
         raise Refused('Backup policy does not match manifest')
     Policy(json.loads(body))       # the real policy class must accept it
@@ -514,14 +514,14 @@ def clear_tree(directory, failpoint=None):
                     failpoint('cleared-file')
 
 
-def cleanup_leftovers(control, anc_root):
+def cleanup_leftovers(control, loom_root):
     for left in list(Path(control).glob('.pre-wipe-*')):
         shutil.rmtree(left)
     for name in ('runtime.sqlite.new', 'runtime.sqlite.new-wal', 'runtime.sqlite.new-shm'):
         with contextlib.suppress(FileNotFoundError):
             (Path(control) / name).unlink()
     with contextlib.suppress(FileNotFoundError, OSError):
-        shutil.rmtree(Path(anc_root) / '.wipe-tmp')
+        shutil.rmtree(Path(loom_root) / '.wipe-tmp')
 
 
 def apply(plan, dest, *, failpoint=None, listening=port_listening):
@@ -535,7 +535,7 @@ def apply(plan, dest, *, failpoint=None, listening=port_listening):
             raise Refused('No completed backup is recorded for this destination')
         check_sources(plan, manifest, phases)
         control = Path(plan['control'])
-        cleanup_leftovers(control, plan['anc_root'])
+        cleanup_leftovers(control, plan['loom_root'])
         stash = control / ('.pre-wipe-' + time.strftime('%Y%m%d%H%M%S'))
         stash.mkdir()
         try:
@@ -564,7 +564,7 @@ def apply(plan, dest, *, failpoint=None, listening=port_listening):
                     p.unlink()
             for item in plan['files']:        # files directly under Jobs
                 p = Path(item['path'])
-                if p.parent == Path(plan['anc_root']) / 'Jobs' and p.exists():
+                if p.parent == Path(plan['loom_root']) / 'Jobs' and p.exists():
                     p.unlink()
             write_state(dest, 'cleared')
             failpoint('after-clear')
@@ -637,7 +637,7 @@ def verify(plan, dest=None, final=True):
             for (name,) in db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").fetchall():
                 if db.execute('SELECT COUNT(*) FROM "' + name + '"').fetchone()[0]:
                     problems.append('inbox not empty: ' + inbox)
-    after = protected_fingerprint(plan['anc_root'], control, plan['gateway_inboxes'])
+    after = protected_fingerprint(plan['loom_root'], control, plan['gateway_inboxes'])
     if after != plan['protected']:
         problems.append('configuration or login file size/mtime changed')
     for target in plan['personnel'].values():
@@ -668,7 +668,7 @@ def verify_restored(plan, dest):
     for directory in manifest['empty_dirs']:
         if not Path(directory).is_dir():
             problems.append('directory missing: ' + directory)
-    if protected_fingerprint(plan['anc_root'], Path(plan['control']), plan['gateway_inboxes']) != plan['protected']:
+    if protected_fingerprint(plan['loom_root'], Path(plan['control']), plan['gateway_inboxes']) != plan['protected']:
         problems.append('configuration or login file size/mtime changed')
     control = Path(plan['control'])
     problems += ['leftover: ' + str(p) for p in [control / 'runtime.sqlite.new', *control.glob('.pre-wipe-*')] if p.exists()]
@@ -695,7 +695,7 @@ def restore_all(plan, dest, manifest):
             with contextlib.suppress(FileNotFoundError):
                 Path(inbox + suffix).unlink()
     for item in manifest['files']:
-        source = Path(dest) / 'data' / Path(item['path']).relative_to(manifest['anc_root'])
+        source = Path(dest) / 'data' / Path(item['path']).relative_to(manifest['loom_root'])
         target = Path(item['path'])
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source, target)
@@ -710,14 +710,14 @@ def restore(plan, dest, *, listening=port_listening):
     revalidate(plan)
     with gate(plan, listening=listening):
         manifest = load_manifest(plan, dest)
-        cleanup_leftovers(plan['control'], plan['anc_root'])
+        cleanup_leftovers(plan['control'], plan['loom_root'])
         return restore_all(plan, dest, manifest)
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument('command', choices=('plan', 'backup', 'apply', 'verify', 'restore', 'verify-restore'))
-    parser.add_argument('--anc-root', required=True)
+    parser.add_argument('--loom-root', required=True)
     parser.add_argument('--control', required=True)
     parser.add_argument('--plan')
     parser.add_argument('--backup')
@@ -727,7 +727,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
     try:
         if args.command == 'plan':
-            plan = build_plan(args.anc_root, args.control, include=args.include, personnel_dir=args.personnel_dir,
+            plan = build_plan(args.loom_root, args.control, include=args.include, personnel_dir=args.personnel_dir,
                               remap=tuple(args.map_root) if args.map_root else None)
             if args.plan:
                 Path(args.plan).write_text(json.dumps(plan, ensure_ascii=False, indent=1), encoding='utf-8')

@@ -9,21 +9,21 @@ import time
 import urllib.parse
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from anc.control import Control
-from anc.commands import Commands
-from anc.instance import InstanceLock
-from anc.membership import FeishuAPI, Membership
-from anc.rpc import RuntimeAPI, serve
-from anc.scheduler import Scheduler
-from anc.transport import LocalTransport, Sender
-from anc.gateway import FeishuTransport
-from anc.wechat_runner import ProtectedCollector
-from anc.platform_decisions import apply_confirmed
-from anc.platform_tasks import progress
-from anc.images import Images
-from anc.group_admission import GroupAdmission
-from anc.basic_members import BasicMembers
-from anc.runtime_scopes import ScopeMap
+from loom.control import Control
+from loom.commands import Commands
+from loom.instance import InstanceLock
+from loom.membership import FeishuAPI, Membership
+from loom.rpc import RuntimeAPI, serve
+from loom.scheduler import Scheduler
+from loom.transport import LocalTransport, Sender
+from loom.gateway import FeishuTransport
+from loom.wechat_runner import ProtectedCollector
+from loom.platform_decisions import apply_confirmed
+from loom.platform_tasks import progress
+from loom.images import Images
+from loom.group_admission import GroupAdmission
+from loom.basic_members import BasicMembers
+from loom.runtime_scopes import ScopeMap
 
 
 class ConfiguredAPI(RuntimeAPI):
@@ -42,7 +42,7 @@ class ConfiguredAPI(RuntimeAPI):
         if self.basic:
             self.basic.from_private_message(envelope)      # may raise Deferred: the gateway keeps the event and retries
         self.observe_unknown(envelope)   # before the deployment-chat check: a new account's first chat is not listed yet
-        from anc.identity_learning import learn
+        from loom.identity_learning import learn
         learn(self.c, envelope)       # a bound member's tenant-wide id, from their own authenticated message
         message = envelope['source']['event']['message']
         if self.groups and message.get('chat_type') == 'group':
@@ -114,26 +114,26 @@ def main():
         commands = Commands(c, runtime, scopes)
         collector = (ProtectedCollector(root, runtime['framework'], config['wechat_capture'])
                      if config.get('wechat_capture', {}).get('enabled') is True else None)
-        from anc.capabilities import Capabilities
+        from loom.capabilities import Capabilities
         engineering=(Capabilities(c,config['capabilities'],commands,collector)
                      if config.get('capabilities',{}).get('enabled') is True else None)
-        from anc.report_leaf import ReportLeaf
-        from anc.feishu_reports import CloudReports
+        from loom.report_leaf import ReportLeaf
+        from loom.feishu_reports import CloudReports
         report_config=config.get('reports',{})
         report_leaf=ReportLeaf(c,report_config.get('node'),report_config.get('resvg')) if report_config.get('enabled') is True else None
         cloud_reports=CloudReports(c,report_leaf,clients) if report_leaf else None
         if cloud_reports and report_config.get('web',{}).get('enabled') is True:
-            from anc.web_reports import WebReports,Publisher
+            from loom.web_reports import WebReports,Publisher
             cloud_reports.web=WebReports(cloud_reports,Publisher(report_config['web']))
             c.secret_values.add(cloud_reports.web.publisher.key)
             c.report_origin=report_config['web']['origin'].rstrip('/')       # lets the reply guard compare links with the issued origin
-        from anc.public_web import PublicWeb
+        from loom.public_web import PublicWeb
         public_web=PublicWeb(c,config['public_web']) if config.get('public_web',{}).get('enabled') is True else None
         basic = BasicMembers(c, directory=lambda app, open_id: clients[app].user_name(open_id))
         contacts = None
         if (config.get('private_contacts', {}).get('enabled') is True
                 or config.get('private_contacts', {}).get('receive_only') is True):
-            from anc.private_contacts import PrivateContacts
+            from loom.private_contacts import PrivateContacts
             contacts = PrivateContacts(c, clients, membership, config['private_contacts'])
             c.contacts = contacts
         api = ConfiguredAPI(c, runtime['framework'], secret, membership.verify, commands,
@@ -151,12 +151,12 @@ def main():
         # This gate is distinct from real-time group event subscription and introductions.
         history_config = config.get('group_history', {})
         if history_config.get('enabled') is True and history_config.get('approved') is True:
-            from anc.group_history import GroupHistory
+            from loom.group_history import GroupHistory
             api.group_history = GroupHistory(c, clients, history_config)
         images_config = config.get('image_generation', {})
         generated_images = None
         if images_config.get('enabled') is True and images_config.get('approved') is True:
-            from anc.generated_images import GeneratedImages
+            from loom.generated_images import GeneratedImages
             allowed = images_config.get('apps', [])
             if not allowed or any(app not in clients for app in allowed):
                 raise ValueError('Approved image app binding unavailable')
@@ -165,7 +165,7 @@ def main():
         sender = Sender(c, transports, lambda scope: membership.verify(scope, force=True), contacts=contacts, images=generated_images)
         backends = None
         if config.get('model_backends'):
-            from anc.model_backend import BackendPool
+            from loom.model_backend import BackendPool
             backends = BackendPool(api, runtime, scopes, config['model_backends'])
             lifetime.callback(backends.close)
         scheduler = Scheduler(c, api, runtime, scopes, sender, backends=backends)
@@ -180,7 +180,7 @@ def main():
                 progress(c, membership.verify)
                 scheduler.send_saved()
                 apply_confirmed(c, membership.verify)
-                from anc.unknown_contact import resume as resume_notices
+                from loom.unknown_contact import resume as resume_notices
                 resume_notices(c)
                 scheduler.start_one()
                 time.sleep(1)

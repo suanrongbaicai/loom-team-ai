@@ -17,7 +17,7 @@ import subprocess
 import sys
 import time
 
-ALLOWED_DIRS = ('anc', 'rules', 'tools', 'templates', 'tests')
+ALLOWED_DIRS = ('loom', 'rules', 'tools', 'templates', 'tests')
 ALLOWED_ROOT = ('README.md', 'THIRD_PARTY_NOTICES.md', 'pyproject.toml', 'requirements-feishu-win-py312.lock', 'sdk-download-manifest.json')
 SKIP_NAMES = {'__pycache__', '.test-work'}
 DEFAULT_SERVICES = ('LOOM-Controller-OwnerWork', 'LOOM-Gateway-Member', 'LOOM-Gateway-NewOwner')
@@ -96,10 +96,10 @@ def downgrade_database(source, database, to_version, evidence):
     """After a failed update: save a full copy of the database (never over an existing file), then undo the migrations the new
     code made, using the DOWN steps of the NEW code (it is the one that knows what it added)."""
     import importlib.util
-    spec = importlib.util.spec_from_file_location('anc_database_new', str(Path(source) / 'anc' / 'database.py'),
+    spec = importlib.util.spec_from_file_location('loom_database_new', str(Path(source) / 'loom' / 'database.py'),
                                                   submodule_search_locations=None)
     module = importlib.util.module_from_spec(spec)
-    sys.modules.setdefault('anc_database_new', module)
+    sys.modules.setdefault('loom_database_new', module)
     spec.loader.exec_module(module)
     target = Path(evidence) / 'db-before-downgrade.sqlite'
     if target.exists():

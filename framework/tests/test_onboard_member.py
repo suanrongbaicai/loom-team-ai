@@ -37,7 +37,7 @@ class OnboardTests(unittest.TestCase):
 class ApplyTests(unittest.TestCase):
     def test_apply_end_to_end(self):
         import tempfile
-        from anc.control import Control
+        from loom.control import Control
         from tests.test_provision import ProvisionTests
         from tools import provision as pv
         t = ProvisionTests('test_fresh_runtime_is_empty_except_policy_and_skills')
@@ -61,7 +61,7 @@ class ApplyTests(unittest.TestCase):
                 updated = c.db.get_policy(db)
             self.assertEqual(updated['roster_version'], state.get('roster_version', 0) + 1)
             self.assertIn('newbie-private', updated['scopes'])
-            self.assertTrue((base / 'ws' / 'newbie' / '.agents' / 'skills' / 'anc-work-records' / 'SKILL.md').is_file())
+            self.assertTrue((base / 'ws' / 'newbie' / '.agents' / 'skills' / 'loom-work-records' / 'SKILL.md').is_file())
             self.assertTrue(Path(args['personnel_file']).is_file())
             with self.assertRaises(om.Refused):
                 om.apply(base / 'ctl', args, '用户确认新增成员批准 2026-10-02', state['epoch'], base / 'ev2', like,
@@ -76,8 +76,8 @@ if __name__ == '__main__':
 
 class FailureTests(unittest.TestCase):
     def test_a_failing_skill_deployment_leaves_no_member_scope_or_workspace(self):
-        from anc.control import Control
-        from anc.skills import Skills
+        from loom.control import Control
+        from loom.skills import Skills
         from tests.test_provision import ProvisionTests
         from tools import provision as pv
         t = ProvisionTests('test_fresh_runtime_is_empty_except_policy_and_skills')

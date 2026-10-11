@@ -8,9 +8,9 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
-from anc.commands import Commands, no_file_aliases, save_journal, system_environment, validate
-from anc.control import Control
-from anc.policy import Denied
+from loom.commands import Commands, no_file_aliases, save_journal, system_environment, validate
+from loom.control import Control
+from loom.policy import Denied
 
 
 class CommandTests(unittest.TestCase):
@@ -31,10 +31,10 @@ class CommandTests(unittest.TestCase):
 
     def test_windows_env_casing_and_no_secret_inheritance(self):
         env = system_environment({'SYSTEMROOT':r'C:\Windows','WINDIR':r'C:\Windows',
-                                  'ANC_TASK_TOKEN':'private','HTTPS_PROXY':'private'})
+                                  'LOOM_TASK_TOKEN':'private','HTTPS_PROXY':'private'})
         self.assertEqual(env['SystemRoot'],r'C:\Windows')
         self.assertIn('.EXE',env['PATHEXT'].split(';'))
-        self.assertNotIn('ANC_TASK_TOKEN',env)
+        self.assertNotIn('LOOM_TASK_TOKEN',env)
         self.assertNotIn('HTTPS_PROXY',env)
     def test_hardlink_refuses_acl_propagation(self):
         Path('.test-work').mkdir(exist_ok=True)
@@ -73,7 +73,7 @@ class CommandTests(unittest.TestCase):
             commands.reconcile()
             self.assertIn('task1',commands.recovery)
             receipt.write_text(json.dumps({'id':'command1','cleanup_confirmed':True}))
-            with patch('anc.commands.acl') as acl:
+            with patch('loom.commands.acl') as acl:
                 commands.reconcile()
                 acl.assert_called_once_with(root/'scratch','/remove:g','*synthetic')
             self.assertEqual(commands.recovery,{})

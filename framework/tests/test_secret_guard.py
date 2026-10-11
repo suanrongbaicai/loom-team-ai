@@ -4,14 +4,14 @@ import tempfile
 import types
 import unittest
 
-from anc.control import Control
-from anc.link_guard import guard as link_guard
-from anc.policy import Denied
-from anc.secret_guard import guard, kind
+from loom.control import Control
+from loom.link_guard import guard as link_guard
+from loom.policy import Denied
+from loom.secret_guard import guard, kind
 from tests.test_control import fixture
 
 APP_SECRET = ''.join(['Zq8uV2mN', 'w4Yx7LpR', '9sTb3KdE', '5fGh1JcA'])      # built at run time: a literal would trip the template factory's secret scan
-REPORT_LINK = 'https://anc-reports.example.test/r/web-' + 'ab12cd34' * 8
+REPORT_LINK = 'https://loom-reports.example.test/r/web-' + 'ab12cd34' * 8
 
 
 class SecretGuardTests(unittest.TestCase):
@@ -68,7 +68,7 @@ class SecretGuardTests(unittest.TestCase):
                     db.execute("SELECT count(*) FROM documents WHERE id='reply-1'").fetchone()[0])
 
     def test_deliver_entry_refuses_a_credential_inside_a_wrong_report_url_without_echo_saving_or_sending(self):
-        from anc import recording
+        from loom import recording
         task = self.c.task('alice', 'alice-private')
         password = 'Tr0ub4dor'.ljust(12, 'x')
         for text in ('报表在 https://admin:' + password + '@reports.example.test/r/web-' + '0' * 64,          # userinfo credential inside an unissued report URL

@@ -5,9 +5,9 @@ from pathlib import Path
 import unittest
 import zipfile
 
-from anc.policy import Denied
-from anc.reports import Reports
-from anc.transport import Sender
+from loom.policy import Denied
+from loom.reports import Reports
+from loom.transport import Sender
 from tests.test_control import ControlTests, grant
 
 
@@ -87,12 +87,12 @@ class RecordReportTests(unittest.TestCase):
         self.assertNotEqual(r.payload(self.a,second['report'])['data'],old)
 
     def test_rpc_saved_file_uses_recording_gate_and_sender(self):
-        from anc.rpc import RuntimeAPI
-        from anc.skills import Skills
+        from loom.rpc import RuntimeAPI
+        from loom.skills import Skills
         r=self.prepare();self.state['scopes']['alice-private']['transport']={'apps':['app'],'chat':'chat'}
         self.c.set_policy(self.state,'transport fixture');ctx=self.c.task('alice','alice-private')
         api=RuntimeAPI(self.c,Path.cwd(),b'x'*32)
-        for name in ('anc-work-records','anc-onboard'):
+        for name in ('loom-work-records','loom-onboard'):
             Skills(self.c).publish(name,'v1',Path('skills')/name,'fixture')
             Skills(self.c).deploy(ctx.scope,name,'v1',self.root/'work')
         api.rules.load(ctx,'SessionStart','table-stage');token=api.issue(ctx)
@@ -103,7 +103,7 @@ class RecordReportTests(unittest.TestCase):
         with self.assertRaises(Denied):api.call(token,'send_report',{'id':'delivery','report':saved['report'],'recording':review,'finish':False})
         api.call(token,'case_passage',{'event':'table-case','base':0,'text':'按现有两份资料整理测试小表，当前10人545，8人仅备选。','commit_id':'table-case-1','citations':[r['evidence'][0] for r in self.rows()]})
         review['events']=['table-case'];review['event']={'state':'updated','reason':'记录本次采用与表格交付阶段。','commits':['table-case-1']}
-        from anc.platform_tasks import queue as notice
+        from loom.platform_tasks import queue as notice
         notice(self.c,ctx,'working-'+ctx.task,'还在处理中，已经超过两分钟。',False,('task',ctx.task,1))   # the system's own notice is not the model's closing text
         with self.assertRaises(ValueError) as caught:api.call(token,'send_report',{'id':'delivery','report':saved['report'],'recording':review})
         self.assertIn('不能是这一轮的最后一句',str(caught.exception))        # a file alone must not end the task (T2-4)
@@ -158,7 +158,7 @@ class RecordReportTests(unittest.TestCase):
 
     def test_record_report_shape_errors_name_the_field_before_anything_is_read(self):
         """E138 fix3: 9 of 10 calls failed with 'id' / 'items' / 'Each item needs name, content, kind and 1..6 actual sources'."""
-        from anc.record_reports import report_shape_problem
+        from loom.record_reports import report_shape_problem
         ok={'id':'r','title':'t','items':[{'name':'n','content':'c','kind':'reported','evidence':[{'id':'x','revision':1,'quote':'q'}]}]}
         self.assertIsNone(report_shape_problem(ok))
         self.assertRegex(report_shape_problem({'title':'t','format':'xlsx','sheets':[]}),'缺少：id、items.*多出.*format、sheets.*不要传 format')
@@ -168,10 +168,10 @@ class RecordReportTests(unittest.TestCase):
         self.assertRegex(report_shape_problem(dict(ok,items=[dict(ok['items'][0],kind='fact')])),'kind 必须是')
         self.assertRegex(report_shape_problem(dict(ok,items=[dict(ok['items'][0],evidence=[{'id':'x','revision':1}])])),'evidence 必须是 1..6 条')
         r=self.prepare();ctx=self.c.task('alice','alice-private')
-        from anc.rpc import RuntimeAPI
-        from anc.skills import Skills
+        from loom.rpc import RuntimeAPI
+        from loom.skills import Skills
         api=RuntimeAPI(self.c,Path.cwd(),b'x'*32)
-        for name in ('anc-work-records','anc-onboard'):
+        for name in ('loom-work-records','loom-onboard'):
             Skills(self.c).publish(name,'v1',Path('skills')/name,'fixture');Skills(self.c).deploy(ctx.scope,name,'v1',self.root/'work')
         api.rules.load(ctx,'SessionStart','shape');token=api.issue(ctx)
         with self.assertRaisesRegex(ValueError,'record_report 未保存：缺少：id'):
@@ -189,7 +189,7 @@ class RecordReportTests(unittest.TestCase):
 
     def test_a_saved_but_unsent_report_stops_the_first_text_finish_once(self):
         """E138 fix7: the table was saved, the reply said it was queued, and no file was ever attached."""
-        from anc.recording import deliver, unsent_reports
+        from loom.recording import deliver, unsent_reports
         r=self.prepare();ctx=self.a
         saved=r.from_records(ctx,'unsent','表',self.rows())
         review=dict(events=[],basis=[],**{k:{'state':'no_change','reason':'只发文字。'} for k in ('data','event','context')})
@@ -212,7 +212,7 @@ class RecordReportTests(unittest.TestCase):
 
     def test_binding_written_before_a_failed_review_is_still_unsent_and_a_queued_file_is_not(self):
         """Codex fix8 repro: bind(saved) wrote file_replies, the recording review then failed, no outbox row existed."""
-        from anc.recording import unsent_reports
+        from loom.recording import unsent_reports
         r=self.prepare();ctx=self.c.task('alice','alice-private')
         for key in ('customer','alternate'):
             self.c.read(ctx,key)

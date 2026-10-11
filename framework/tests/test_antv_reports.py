@@ -7,8 +7,8 @@ import shutil
 import unittest
 from unittest.mock import patch
 
-from anc import report_templates as templates
-from anc.policy import Denied
+from loom import report_templates as templates
+from loom.policy import Denied
 from tests.test_report_leaf import ReportLeafTests
 
 
@@ -59,7 +59,7 @@ class AntVTests(unittest.TestCase):
             content=templates.render(spec).decode()
             self.assertNotIn(spec['title'],content)
             self.assertIn('connect-src \'none\'',content)
-            self.assertIn('ANCChart.mount',content)
+            self.assertIn('LOOMChart.mount',content)
             self.assertNotIn('<script src=',content)
             self.assertNotIn('new Gantt',content)
 

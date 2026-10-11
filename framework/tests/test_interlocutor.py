@@ -1,6 +1,6 @@
 import unittest
 
-from anc.rules import Rules
+from loom.rules import Rules
 
 
 class InterlocutorTests(unittest.TestCase):

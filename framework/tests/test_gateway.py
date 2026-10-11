@@ -7,8 +7,8 @@ import unittest
 import uuid
 from unittest.mock import patch
 
-from anc.gateway import Inbox, ControllerIngress, FeishuTransport, configure_sdk_proxy
-from anc.policy import Denied
+from loom.gateway import Inbox, ControllerIngress, FeishuTransport, configure_sdk_proxy
+from loom.policy import Denied
 
 
 class GatewayTests(unittest.TestCase):
@@ -106,7 +106,7 @@ class GatewayTests(unittest.TestCase):
 class WebSocketRouteTests(unittest.TestCase):
     def test_explicit_proxy_reaches_sdk_options_without_weakening_tls(self):
         from types import SimpleNamespace
-        from anc.gateway import configure_sdk_websocket_proxy
+        from loom.gateway import configure_sdk_websocket_proxy
         def connect(uri,proxy=True,**kwargs):raise AssertionError('No network in this check')
         sdk=SimpleNamespace(websockets=SimpleNamespace(connect=connect),_ws_connect_kwargs=lambda:{'proxy':None,'open_timeout':10})
         configure_sdk_websocket_proxy('http://127.0.0.1:3076',sdk)
@@ -115,7 +115,7 @@ class WebSocketRouteTests(unittest.TestCase):
 
     def test_unconfigured_and_invalid_proxy_never_silently_route_credentials(self):
         from types import SimpleNamespace
-        from anc.gateway import configure_sdk_websocket_proxy
+        from loom.gateway import configure_sdk_websocket_proxy
         sdk=SimpleNamespace(_ws_connect_kwargs=lambda:{'proxy':None})
         configure_sdk_websocket_proxy(None,sdk);self.assertEqual(sdk._ws_connect_kwargs(),{'proxy':None})
         for proxy in ('http://example.org:3076','http://user:secret@127.0.0.1:3076','http://127.0.0.1:3076/path'):

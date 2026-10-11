@@ -3,11 +3,11 @@ import sqlite3
 import unittest
 from unittest.mock import patch
 
-from anc.control import Control, RecoveryRequired
-from anc.policy import Denied
-from anc.lookup import compose
-from anc.retrieval import objects, metadata
-from anc.references import passage, catalog
+from loom.control import Control, RecoveryRequired
+from loom.policy import Denied
+from loom.lookup import compose
+from loom.retrieval import objects, metadata
+from loom.references import passage, catalog
 from tests import test_control as fixture
 from tests import test_recording as rpc_fixture
 
@@ -67,7 +67,7 @@ class RetrievalTests(unittest.TestCase):
 
     def test_fts_missing_broken_or_over_budget_uses_originals(self):
         self.record(self.a,'budget','准确找到国庆预算')
-        with patch('anc.retrieval.Index',side_effect=sqlite3.OperationalError('no fts')):
+        with patch('loom.retrieval.Index',side_effect=sqlite3.OperationalError('no fts')):
             self.assertEqual(self.c.search(self.a,'国庆 预算')['matches'],1)
         del self.c._search_index
         self.c.search(self.a,'国庆')
@@ -134,7 +134,7 @@ class RetrievalTests(unittest.TestCase):
         with self.assertRaises(Denied):compose(self.c,new,'描述',self.descriptor())
         original=self.c.read(new,'holiday')['text']
         value=metadata(original);value['aliases']=['凭空声明的别名']
-        tampered='---\nanc_lookup: '+json.dumps(value,ensure_ascii=False)+'\n---\n正文'
+        tampered='---\nloom_lookup: '+json.dumps(value,ensure_ascii=False)+'\n---\n正文'
         with self.assertRaises(Denied):self.record(new,'forged',tampered)
         with self.assertRaises(Denied):self.record(new,'wrong-layer',tampered,kind='data')
 
@@ -164,7 +164,7 @@ class RetrievalRpcTests(unittest.TestCase):
         self.assertEqual(self.api.call(token,'case_catalog',{'limit':1})['entries'][0]['title'],'国庆')
         self.assertEqual(self.api.call(token,'search',{'queries':['不存在','预算 待核']})['matches'],1)
         with self.assertRaises(ValueError):self.api.call(token,'read_many',{'ids':['names'],'requests':[{'id':'names'}]})
-        from anc.mcp import TOOLS
+        from loom.mcp import TOOLS
         table={t['name']:t['inputSchema'] for t in TOOLS}
         self.assertIn('lookup',table['record']['properties'])
         self.assertIn('objects',table);self.assertIn('start',table['read']['properties'])
@@ -175,7 +175,7 @@ class RetrievalRpcTests(unittest.TestCase):
             self.api.call(token,'record',{'id':key,'kind':'data','text':'独特原句。','commit_id':key+'-saved'})
         with self.assertRaises(ValueError):
             self.api.call(token,'read_many',{'requests':[{'id':'one'},{'id':'two','start':999}]})
-        from anc.references import read_versions
+        from loom.references import read_versions
         with self.c.db.transaction() as db:
             self.assertEqual(read_versions(db,self.ctx.task,'one'),[])
 

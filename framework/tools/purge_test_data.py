@@ -1,4 +1,4 @@
-"""Protected administrator tool: remove user-authorised TEST data (0065) from the ANC control database and disk.
+"""Protected administrator tool: remove user-authorised TEST data (0065) from the LOOM control database and disk.
 
 Not a general delete API. It works from an explicit seed (the S list built from the reviewed dependency graph),
 never from keywords or time ranges, and it is built so that "nothing else changed" is checked, not hoped for:
@@ -117,7 +117,7 @@ def select(db, table, column, values):
 def doc_files(c, db, row):
     """Exactly this document's files: current file, its own revision history, and the staging file each of ITS commits
     would have used (a per-commit name, never a directory glob: neighbours' pending files are not ours)."""
-    from anc.control import digest
+    from loom.control import digest
     path = c._path(db, row)
     files = []
     if path.exists():
@@ -537,7 +537,7 @@ def main():
     parser.add_argument('--rehearsal-dir', type=Path, help='where a rehearsal keeps its complete audit receipts (outside production)')
     args = parser.parse_args()
     sys.path.insert(0, str(args.framework))
-    from anc.control import Control
+    from loom.control import Control
     seed = json.loads(args.seed.read_text(encoding='utf8'))
     if args.rehearsal:
         if not (args.production_control_root and args.rehearsal_dir):

@@ -7,13 +7,13 @@ import unittest
 import urllib.error
 import urllib.request
 
-from anc.control import Control
-from anc.hook import run as hook
-from anc.ingress import Ingress
-from anc.mcp import handle
-from anc.policy import Denied
-from anc.rpc import RuntimeAPI, serve
-from anc.skills import Skills
+from loom.control import Control
+from loom.hook import run as hook
+from loom.ingress import Ingress
+from loom.mcp import handle
+from loom.policy import Denied
+from loom.rpc import RuntimeAPI, serve
+from loom.skills import Skills
 from tests.test_control import fixture
 
 
@@ -57,7 +57,7 @@ class RuntimeTests(unittest.TestCase):
             self.assertEqual(db.execute('SELECT count(*) FROM processing').fetchone()[0], 2)
 
     def test_bot_identity_is_bound_to_authenticated_delivery_app_and_group_alias_stays_separate(self):
-        from anc.group_settings import alias_of, set_alias
+        from loom.group_settings import alias_of, set_alias
         self.install_rules()
         set_alias(self.c, self.ctx, '小助手')
         self.api.rules.features = {'bot_identities': {'second-bot': {
@@ -72,7 +72,7 @@ class RuntimeTests(unittest.TestCase):
         def load(task, session):
             with self.c.db.transaction() as db:
                 row = db.execute('SELECT * FROM tasks WHERE id=?', (task,)).fetchone()
-            from anc.policy import Context
+            from loom.policy import Context
             return self.api.rules.load(Context(row['actor'], row['scope'], row['epoch'], task), 'SessionStart', session)
         ordinary = load(first['task'], 'identity-session-a')
         owner = load(second['task'], 'identity-session-b')
@@ -136,7 +136,7 @@ class RuntimeTests(unittest.TestCase):
 
     def install_rules(self):
         skills = Skills(self.c)
-        for key in ('anc-work-records', 'anc-onboard'):
+        for key in ('loom-work-records', 'loom-onboard'):
             skills.publish(key, 'v1', Path('skills') / key, 'test-approval')
             skills.deploy('group', key, 'v1', self.root / 'work')
 
@@ -216,7 +216,7 @@ class RuntimeTests(unittest.TestCase):
         for event in ('SessionStart', 'UserPromptSubmit'):
             result = hook({'hook_event_name': event, 'session_id': 'session1'}, invoke)
             self.assertIn(expected, result['hookSpecificOutput']['additionalContext'])
-            self.assertIn('anc-onboard@v1', result['hookSpecificOutput']['additionalContext'])
+            self.assertIn('loom-onboard@v1', result['hookSpecificOutput']['additionalContext'])
         self.assertEqual(hook({'hook_event_name': 'PostCompact', 'session_id': 'session1'}, invoke), {})
         self.assertEqual(hook({'hook_event_name': 'PreToolUse'}, invoke), {})
         self.c.set_policy(self.state, 'revoke-current-context')
@@ -238,21 +238,21 @@ class RuntimeTests(unittest.TestCase):
 
     def test_on_demand_skill_is_a_one_line_pointer_until_skill_read_loads_it(self):
         self.install_rules()
-        self.api.rules.features = {'on_demand_skills': {'scopes': [self.ctx.scope], 'skills': ['anc-onboard']}}
+        self.api.rules.features = {'on_demand_skills': {'scopes': [self.ctx.scope], 'skills': ['loom-onboard']}}
         text = self.api.rules.load(self.ctx, 'UserPromptSubmit', 'session1')
-        full = (Path('skills') / 'anc-onboard' / 'SKILL.md').read_text(encoding='utf-8')
-        self.assertIn('anc-onboard@v1 (on demand)', text)
+        full = (Path('skills') / 'loom-onboard' / 'SKILL.md').read_text(encoding='utf-8')
+        self.assertIn('loom-onboard@v1 (on demand)', text)
         self.assertNotIn(full[:400], text)                            # the body is not in the run's context
-        self.assertIn('anc-work-records@v1', text)                    # other skills are untouched
+        self.assertIn('loom-work-records@v1', text)                    # other skills are untouched
         with self.c.db.transaction() as db:
             loaded = [json.loads(r[0])['skill'] for r in db.execute("SELECT detail FROM audit WHERE task=? AND action='skill.loaded'", (self.ctx.task,))]
-        self.assertNotIn('anc-onboard', loaded)                       # nothing was loaded, so nothing is claimed
-        result = self.api.skill_read(self.ctx, 'anc-onboard')
+        self.assertNotIn('loom-onboard', loaded)                       # nothing was loaded, so nothing is claimed
+        result = self.api.skill_read(self.ctx, 'loom-onboard')
         self.assertEqual(result['text'], full)
-        self.api.skill_read(self.ctx, 'anc-onboard')                  # a second read does not add a second audit row
+        self.api.skill_read(self.ctx, 'loom-onboard')                  # a second read does not add a second audit row
         with self.c.db.transaction() as db:
             loaded = [json.loads(r[0])['skill'] for r in db.execute("SELECT detail FROM audit WHERE task=? AND action='skill.loaded'", (self.ctx.task,))]
-        self.assertEqual(loaded.count('anc-onboard'), 1)
+        self.assertEqual(loaded.count('loom-onboard'), 1)
         again = self.api.rules.load(self.ctx, 'PostCompact', 'session1')   # after a compaction the already-read skill is restored in full
         self.assertIn(full[:200], again)
 
@@ -263,9 +263,9 @@ class RuntimeTests(unittest.TestCase):
 
     def test_on_demand_is_off_by_default_and_other_scopes_are_not_affected(self):
         self.install_rules()
-        full = (Path('skills') / 'anc-onboard' / 'SKILL.md').read_text(encoding='utf-8')
+        full = (Path('skills') / 'loom-onboard' / 'SKILL.md').read_text(encoding='utf-8')
         self.assertIn(full[:200], self.api.rules.load(self.ctx, 'UserPromptSubmit', 'session1'))          # no config: everything in full
-        self.api.rules.features = {'on_demand_skills': {'scopes': ['someone-else'], 'skills': ['anc-onboard']}}
+        self.api.rules.features = {'on_demand_skills': {'scopes': ['someone-else'], 'skills': ['loom-onboard']}}
         self.assertIn(full[:200], self.api.rules.load(self.ctx, 'UserPromptSubmit', 'session1'))
 
     def test_tool_descriptions_tell_the_model_that_questions_end_the_run_with_finish_true(self):
@@ -292,7 +292,7 @@ class RuntimeTests(unittest.TestCase):
         result = hook({'hook_event_name':'UserPromptSubmit','session_id':'new-session'}, invoke)
         full = result['hookSpecificOutput']['additionalContext']
         self.assertIn(Path('rules/AGENTS.md').read_text(encoding='utf-8'), full)
-        self.assertIn('anc-work-records@v1', full)
+        self.assertIn('loom-work-records@v1', full)
         self.assertTrue(self.api.call(token, 'guard', {})['current'])
         with self.c.db.transaction() as db:
             self.assertEqual(db.execute("SELECT count(*) FROM audit WHERE task=? AND action='rules.delivered'", (self.ctx.task,)).fetchone()[0], 1)

@@ -60,7 +60,7 @@ def paths_for(control):
 
 def collect(control, policy_roots=None):
     """Everything worth backing up as (source path, relative name); links are reported, never followed."""
-    control, anc_root = paths_for(control)
+    control, loom_root = paths_for(control)
     files, skipped, seen = [], [], set()
 
     def add_tree(base):
@@ -78,7 +78,7 @@ def collect(control, policy_roots=None):
                     skipped.append(str(path))
                 elif entry.lower() not in NEVER and path not in seen:
                     seen.add(path)
-                    files.append((path, path.relative_to(anc_root).as_posix()))
+                    files.append((path, path.relative_to(loom_root).as_posix()))
 
     for name in DATA_DIRS:
         add_tree(control / name)
@@ -86,11 +86,11 @@ def collect(control, policy_roots=None):
         add_tree(root)
     for personnel in control.glob('*personnel*.md'):
         if personnel.is_file() and not is_link(personnel):
-            files.append((personnel, personnel.relative_to(anc_root).as_posix()))
-    jobs = anc_root / 'Jobs'
+            files.append((personnel, personnel.relative_to(loom_root).as_posix()))
+    jobs = loom_root / 'Jobs'
     if jobs.is_dir():
         add_tree(jobs)
-    workers = anc_root / 'Workers'
+    workers = loom_root / 'Workers'
     if workers.is_dir():
         for worker in sorted(workers.iterdir()):
             add_tree(worker / 'Outputs')
@@ -99,13 +99,13 @@ def collect(control, policy_roots=None):
 
 def databases(control):
     """Live databases that must be copied through SQLite's backup, not as files."""
-    control, anc_root = paths_for(control)
+    control, loom_root = paths_for(control)
     found = []
     if (control / 'runtime.sqlite').is_file():
-        found.append((control / 'runtime.sqlite', (control / 'runtime.sqlite').relative_to(anc_root).as_posix()))
+        found.append((control / 'runtime.sqlite', (control / 'runtime.sqlite').relative_to(loom_root).as_posix()))
     for gateway in sorted(control.parent.glob('Gateway*')):
         if (gateway / 'inbox.sqlite').is_file() and not is_link(gateway / 'inbox.sqlite'):
-            found.append((gateway / 'inbox.sqlite', (gateway / 'inbox.sqlite').relative_to(anc_root).as_posix()))
+            found.append((gateway / 'inbox.sqlite', (gateway / 'inbox.sqlite').relative_to(loom_root).as_posix()))
     return found
 
 
@@ -211,11 +211,11 @@ def copy_database(source, target):
 
 def export(control, destination_root, progress=None, now=time.strftime):
     """destination_root is the drive root (e.g. F:\\) or any existing folder; returns the manifest summary."""
-    control, anc_root = paths_for(control)
+    control, loom_root = paths_for(control)
     dest_root = Path(destination_root)
     if not dest_root.exists():
         raise Refused('The destination is not available')
-    if os.path.normcase(os.path.abspath(dest_root)).startswith(os.path.normcase(os.path.abspath(anc_root))):
+    if os.path.normcase(os.path.abspath(dest_root)).startswith(os.path.normcase(os.path.abspath(loom_root))):
         raise Refused('The destination may not lie inside the data folder')
     if is_link(dest_root):
         raise Refused('The destination is a link')
@@ -226,8 +226,8 @@ def export(control, destination_root, progress=None, now=time.strftime):
     if free < need['needed_bytes']:
         raise Refused('Not enough free space: %d bytes free, %d needed' % (free, need['needed_bytes']))
     stamp = now('%Y%m%d-%H%M%S')
-    work = dest_root / 'ANC-Backup' / (stamp + '.partial')
-    final = dest_root / 'ANC-Backup' / stamp
+    work = dest_root / 'LOOM-Backup' / (stamp + '.partial')
+    final = dest_root / 'LOOM-Backup' / stamp
     if work.exists() or final.exists():
         raise Refused('A backup with this name already exists')
     total = sum(p.stat().st_size for p, _ in files if p.exists()) + sum(p.stat().st_size for p, _ in dbs)
@@ -255,7 +255,7 @@ def export(control, destination_root, progress=None, now=time.strftime):
             if sha_file(work / 'data' / entry['path']) != entry['sha256']:
                 raise Refused('A copy does not match what was read: ' + entry['path'])
         manifest = {'version': VERSION, 'created': time.strftime('%Y-%m-%dT%H:%M:%S%z'), 'host': socket.gethostname(),
-                    'source': {'anc_root': str(anc_root), 'control': str(control)}, 'files': entries,
+                    'source': {'loom_root': str(loom_root), 'control': str(control)}, 'files': entries,
                     'skipped_links': skipped, 'warnings': warnings,
                     'not_included': sorted(NEVER) + ['CodexHome', 'Browser', 'logs', 'caches'],
                     'encrypted': False}
@@ -335,20 +335,20 @@ def verify_backup(folder):
 def restore(folder, control, apply=False, gate=None):
     """Put a verified backup back.  Without --apply it only reports.  Existing data is moved aside, never deleted."""
     manifest, problems = verify_backup(folder)
-    control, anc_root = paths_for(control)
-    plan = {'files': len(manifest['files']), 'problems': problems, 'target': str(anc_root)}
+    control, loom_root = paths_for(control)
+    plan = {'files': len(manifest['files']), 'problems': problems, 'target': str(loom_root)}
     if problems or not apply:
         return plan
     if gate:
         gate()
     for entry in manifest['files']:      # no part of the target path may be a link or lead outside the data root
-        target = anc_root / entry['path']
-        if not inside(anc_root, target) or node_problem(target, anc_root):
+        target = loom_root / entry['path']
+        if not inside(loom_root, target) or node_problem(target, loom_root):
             raise Refused('Restore target is a link or outside the data folder: ' + entry['path'])
-    stash = anc_root / ('.pre-restore-' + time.strftime('%Y%m%d%H%M%S'))
+    stash = loom_root / ('.pre-restore-' + time.strftime('%Y%m%d%H%M%S'))
     moved = 0
     for entry in manifest['files']:
-        target = anc_root / entry['path']
+        target = loom_root / entry['path']
         if target.exists():
             keep = stash / entry['path']
             keep.parent.mkdir(parents=True, exist_ok=True)
@@ -358,9 +358,9 @@ def restore(folder, control, apply=False, gate=None):
         for entry in manifest['files']:
             if entry['kind'] == 'database':
                 with contextlib.suppress(FileNotFoundError):
-                    os.replace(str(anc_root / entry['path']) + suffix, str(stash / entry['path']) + suffix)
+                    os.replace(str(loom_root / entry['path']) + suffix, str(stash / entry['path']) + suffix)
     for entry in manifest['files']:
-        target = anc_root / entry['path']
+        target = loom_root / entry['path']
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(Path(folder) / 'data' / entry['path'], target)
         if sha_file(target) != entry['sha256']:
@@ -387,7 +387,7 @@ def main(argv=None):
             manifest, problems = verify_backup(args.source)
             result = {'files': len(manifest['files']), 'problems': problems, 'ok': not problems}
         else:
-            from anc.instance import InstanceBusy, InstanceLock
+            from loom.instance import InstanceBusy, InstanceLock
             locks = contextlib.ExitStack()
 
             def gate():

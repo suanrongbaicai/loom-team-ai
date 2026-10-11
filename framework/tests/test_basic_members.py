@@ -1,12 +1,12 @@
 import json
 import unittest
 
-from anc import member_labels
-from anc.basic_members import BasicMembers, Deferred
-from anc.group_admission import GroupAdmission, group_scope_id
-from anc.membership import Membership
-from anc.policy import Context
-from anc.runtime_scopes import ScopeMap, resolve
+from loom import member_labels
+from loom.basic_members import BasicMembers, Deferred
+from loom.group_admission import GroupAdmission, group_scope_id
+from loom.membership import Membership
+from loom.policy import Context
+from loom.runtime_scopes import ScopeMap, resolve
 from tests.test_group_admission import GroupTests as Base, TENANT
 
 

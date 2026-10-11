@@ -12,9 +12,9 @@ class FactoryTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory(dir='.test-work')
         self.base = Path(self.temp.name).absolute()
         self.src = self.base / 'src'
-        for rel, text in {'anc/a.py': 'x = 1\n', 'rules/AGENTS.md': '# rules\n', 'skills/s/SKILL.md': 'skill\n',
+        for rel, text in {'loom/a.py': 'x = 1\n', 'rules/AGENTS.md': '# rules\n', 'skills/s/SKILL.md': 'skill\n',
                           'tools/t.py': 'pass\n', 'tests/test_a.py': 'pass\n', 'README.md': 'readme\n',
-                          'tools/purge_test_data.py': 'old\n', 'anc/__pycache__/a.pyc': 'x'}.items():
+                          'tools/purge_test_data.py': 'old\n', 'loom/__pycache__/a.pyc': 'x'}.items():
             (self.src / rel).parent.mkdir(parents=True, exist_ok=True)
             (self.src / rel).write_text(text)
         self.templates = self.base / 'tpl'
@@ -42,16 +42,16 @@ class FactoryTests(unittest.TestCase):
         self.built()
         cases = {
             'runtime.sqlite': 'forbidden file',
-            'anc/controller.json': 'forbidden file',
+            'loom/controller.json': 'forbidden file',
             'Evidence/x.txt': 'forbidden directory',
-            'anc/ids.py': 'content rule feishu-app-id',
-            'anc/people.py': 'content rule wechat-id',
-            'anc/paths.py': 'content rule production-root',
-            'anc/creds.py': 'content rule secret-assignment',
+            'loom/ids.py': 'content rule feishu-app-id',
+            'loom/people.py': 'content rule wechat-id',
+            'loom/paths.py': 'content rule production-root',
+            'loom/creds.py': 'content rule secret-assignment',
         }
-        contents = {'anc/ids.py': 'APP = "cli_' + 'a1b2c3d4e5f60718' + '"\n', 'anc/people.py': 'W = "wxid_' + 'abcdefgh12' + '"\n',
-                    'anc/paths.py': 'P = r"E:\\ExampleDeployment\\Control\\ExampleWork"\n',
-                    'anc/creds.py': 'app_secret = "' + 'A' * 24 + '"\n'}
+        contents = {'loom/ids.py': 'APP = "cli_' + 'a1b2c3d4e5f60718' + '"\n', 'loom/people.py': 'W = "wxid_' + 'abcdefgh12' + '"\n',
+                    'loom/paths.py': 'P = r"E:\\ExampleDeployment\\Control\\ExampleWork"\n',
+                    'loom/creds.py': 'app_secret = "' + 'A' * 24 + '"\n'}
         for rel, expect in cases.items():
             path = self.out / rel
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -78,7 +78,7 @@ class FactoryTests(unittest.TestCase):
             (self.out / name).write_bytes(data)
             self.assertFalse(factory.verify(self.out)['ok'], name)
             (self.out / name).unlink()
-        for name in ('anc/evidence', 'tools/Jobs', 'skills/s/QA'):
+        for name in ('loom/evidence', 'tools/Jobs', 'skills/s/QA'):
             (self.out / name).mkdir(parents=True)
             self.assertTrue(any('forbidden directory' in p for p in factory.verify(self.out)['problems']), name)
             (self.out / name).rmdir()
@@ -100,17 +100,17 @@ class FactoryTests(unittest.TestCase):
         outside.mkdir()
         (outside / 'x.txt').write_text('outside')
         try:
-            (self.src / 'anc' / 'alias').symlink_to(outside, target_is_directory=True)
+            (self.src / 'loom' / 'alias').symlink_to(outside, target_is_directory=True)
         except OSError:
             self.skipTest('symlink not available')
         with self.assertRaises(SystemExit):
             self.built()
-        (self.src / 'anc' / 'alias').unlink()
+        (self.src / 'loom' / 'alias').unlink()
         (self.base / 'linkout').symlink_to(outside, target_is_directory=True)
         with self.assertRaises(SystemExit):
             factory.build(self.base / 'linkout' / 'pkg', 'v', 'c', root=self.src, templates=self.templates)
         self.built()
-        (self.out / 'anc' / 'alias').symlink_to(outside, target_is_directory=True)
+        (self.out / 'loom' / 'alias').symlink_to(outside, target_is_directory=True)
         self.assertTrue(any(p.startswith('link:') for p in factory.verify(self.out)['problems']))
 
     def test_a_link_at_a_package_entry_point_or_on_the_package_path_is_refused(self):
@@ -143,7 +143,7 @@ class FactoryTests(unittest.TestCase):
         (self.out / 'rules' / 'AGENTS.md').write_text('# edited\n')
         self.assertTrue(any('changed' in p for p in factory.verify(self.out)['problems']))
         (self.out / 'rules' / 'AGENTS.md').write_text('# rules\n')
-        (self.out / 'anc' / 'a.py').unlink()
+        (self.out / 'loom' / 'a.py').unlink()
         self.assertTrue(any('missing' in p for p in factory.verify(self.out)['problems']))
 
     def test_refuses_a_nonempty_output_and_skill_without_skill_md(self):

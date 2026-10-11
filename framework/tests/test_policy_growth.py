@@ -4,8 +4,8 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from anc.control import Control
-from anc.policy import Policy, StaleContext
+from loom.control import Control
+from loom.policy import Policy, StaleContext
 from tests.test_control import fixture
 
 

@@ -5,7 +5,7 @@ tested; `apply` takes the controller/gateway leases (services must be stopped), 
 previous policy as evidence, writes the new one through Control.set_policy (epoch +1, audit), creates the scope root and
 personnel file, and deploys the same approved skill versions that an existing scope (--like) already has.
 It only ADDS: an existing member, scope, binding or app is refused, never overwritten.  Group chats need no step here:
-they are admitted automatically when every member is on the roster (anc/group_admission.py).
+they are admitted automatically when every member is on the roster (loom/group_admission.py).
 Output: names, counts, hashes - never policy values."""
 import argparse
 import contextlib
@@ -17,12 +17,12 @@ import shutil
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from anc.control import Control  # noqa: E402
-from anc.instance import InstanceBusy, InstanceLock  # noqa: E402
-from anc.skills import Skills  # noqa: E402
+from loom.control import Control  # noqa: E402
+from loom.instance import InstanceBusy, InstanceLock  # noqa: E402
+from loom.skills import Skills  # noqa: E402
 
 
-from anc.onboard_member_core import Refused, add_member  # noqa: E402,F401
+from loom.onboard_member_core import Refused, add_member  # noqa: E402,F401
 
 
 def sha(text):

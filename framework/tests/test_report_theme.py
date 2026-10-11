@@ -1,7 +1,7 @@
 import re
 import unittest
 
-from anc import report_templates as templates
+from loom import report_templates as templates
 from tests.test_antv_reports import samples
 
 
@@ -16,7 +16,7 @@ class ThemeTests(unittest.TestCase):
     def test_every_template_carries_the_shared_theme_light_dark_and_mobile_rules(self):
         for spec in samples() + [table_spec()]:
             page = templates.render(spec).decode()
-            self.assertIn('<body class="anc">', page, spec['template'])
+            self.assertIn('<body class="loom">', page, spec['template'])
             self.assertIn('prefers-color-scheme:dark', page)
             self.assertIn('max-width:640px', page)
             self.assertIn('--s1:#2a78d6', page)
@@ -34,12 +34,12 @@ class ThemeTests(unittest.TestCase):
         script = (templates.ROOT / 'antv-report.js').read_text(encoding='utf-8')
         self.assertIn("cssVar('--s1'", script)
         self.assertNotIn('#5B8FF9', script)
-        css = (templates.ROOT / 'anc-theme.css').read_text(encoding='utf-8')
+        css = (templates.ROOT / 'loom-theme.css').read_text(encoding='utf-8')
         for token in ('--s1', '--s2', '--s3', '--ink', '--up', '--down'):
             self.assertIn(token, css)
 
     def test_no_remote_resources_are_referenced(self):
-        css = (templates.ROOT / 'anc-theme.css').read_text(encoding='utf-8')
+        css = (templates.ROOT / 'loom-theme.css').read_text(encoding='utf-8')
         self.assertFalse(re.search(r'url\(|@import|https?://', css))
 
 

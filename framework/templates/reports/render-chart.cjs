@@ -61,5 +61,5 @@ if(mobile.yAxis?.type==='category')mobile.yAxis.axisLabel={...mobile.yAxis.axisL
 if(s.template==='composition'){mobile.series[0].label={show:false};mobile.legend={bottom:0,textStyle:{fontSize:13}};}
 if(s.template==='relationship'){mobile.xAxis.name='';mobile.yAxis.name='';}
 const svg_mobile=draw(340,mobile);let png=null;
-if(process.env.ANC_RESVG_MODULE){const {Resvg}=require(process.env.ANC_RESVG_MODULE);png=new Resvg(svg_mobile,{fitTo:{mode:'width',value:1020}}).render().asPng().toString('base64');}
+if(process.env.LOOM_RESVG_MODULE){const {Resvg}=require(process.env.LOOM_RESVG_MODULE);png=new Resvg(svg_mobile,{fitTo:{mode:'width',value:1020}}).render().asPng().toString('base64');}
 process.stdout.write(JSON.stringify({title,svg,svg_mobile,png}));

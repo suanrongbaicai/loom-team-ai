@@ -6,11 +6,11 @@ import threading
 import unittest
 from unittest.mock import patch
 
-from anc.control import Control
-from anc.model_backend import BackendPool, Host, Run
-from anc.policy import Context, Denied
-from anc.rpc import RuntimeAPI
-from anc.scheduler import Scheduler
+from loom.control import Control
+from loom.model_backend import BackendPool, Host, Run
+from loom.policy import Context, Denied
+from loom.rpc import RuntimeAPI
+from loom.scheduler import Scheduler
 from tests.test_control import fixture
 from tests.test_scheduler import UnusedSender
 
@@ -105,8 +105,8 @@ class BackendTests(unittest.TestCase):
         self.assertTrue(self.scheduler.fits(row, [self.row(first)], 1))
 
     def test_other_bot_cannot_cancel_resume_list_or_absorb_a_task(self):
-        from anc.tasks import Tasks
-        from anc.supplements import collect
+        from loom.tasks import Tasks
+        from loom.supplements import collect
         first = self.arrival(0, text='bot A current work')
         second = self.arrival(0, 'other-bot', text='bot B current work')
         row = self.row(second)
@@ -138,7 +138,7 @@ class BackendTests(unittest.TestCase):
         run = Run({'id': task_a, 'job_path': str(self.root / 'job-a.json')}, tokens[0], thread='thread-A', turn='turn-A')
         run.bound.set()
         host.by_thread['thread-A'] = run
-        request = {'threadId': 'thread-A', 'turnId': 'turn-A', 'tool': 'anc_read',
+        request = {'threadId': 'thread-A', 'turnId': 'turn-A', 'tool': 'loom_read',
                    'arguments': {'id': 'only-alice'}}
         try:
             with patch.object(self.api.rules, 'load', return_value='verified'):
@@ -191,7 +191,7 @@ class BackendTests(unittest.TestCase):
             BackendPool(self.api, self.runtime, self.scopes, config)
 
     def test_sparse_quota_updates_preserve_numbers_and_postcompact_failure_cancels_only_one(self):
-        from anc.usage import latest_limits
+        from loom.usage import latest_limits
         host = Host(self.pool, self.pool.resources['a'], self.scopes['chat-0'])
         try:
             host.notification('account/rateLimits/updated', {'rateLimits': {'primary': {

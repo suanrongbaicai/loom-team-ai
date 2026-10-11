@@ -3,10 +3,10 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from anc.control import Control
-from anc.governance import Governance
-from anc.policy import Denied
-from anc.rpc import RuntimeAPI
+from loom.control import Control
+from loom.governance import Governance
+from loom.policy import Denied
+from loom.rpc import RuntimeAPI
 from tests.test_control import fixture
 
 
@@ -40,7 +40,7 @@ class PlatformDecisionTests(unittest.TestCase):
                                   'mentions': [{'key': '@_user_1', 'id': {'open_id': 'bot-a'}}]}}}}
 
     def test_actual_sender_votes_once_without_starting_model(self):
-        command = '/anc-vote ' + self.proposal['id'] + ' 1 approve'
+        command = '/loom-vote ' + self.proposal['id'] + ' 1 approve'
         for actor in ('alice', 'bob', 'carol'):
             event = self.envelope(actor, actor, command)
             result = self.api.accept(event)
@@ -53,7 +53,7 @@ class PlatformDecisionTests(unittest.TestCase):
             self.assertEqual(db.execute("SELECT count(*) FROM tasks WHERE kind='turn' AND event IS NOT NULL AND state!='done'").fetchone()[0], 0)
 
     def test_bot_unknown_actor_and_quoted_vote_do_not_vote(self):
-        command = '/anc-vote ' + self.proposal['id'] + ' 1 approve'
+        command = '/loom-vote ' + self.proposal['id'] + ' 1 approve'
         self.assertIn('ignored', self.api.accept(self.envelope('alice', 'bot', command, human=False)))
         with self.assertRaises(Denied):
             self.api.accept(self.envelope('someone-else', 'fake', command))
@@ -64,14 +64,14 @@ class PlatformDecisionTests(unittest.TestCase):
 
     def test_review_private_content_is_not_disclosed_to_group(self):
         private = self.g.propose(self.c.task('alice', 'alice-private'), {'text': 'private-only-needle'})
-        result = self.api.accept(self.envelope('alice', 'read-private', '/anc-proposal ' + private['id']))
+        result = self.api.accept(self.envelope('alice', 'read-private', '/loom-proposal ' + private['id']))
         with self.c.db.transaction() as db:
             row = db.execute('SELECT payload_document FROM outbox WHERE task=?', (result['task'],)).fetchone()
             document = db.execute('SELECT * FROM documents WHERE id=?', (row[0],)).fetchone()
             self.assertNotIn('private-only-needle', self.c._read(db, document).decode())
 
     def test_wrong_version_gets_no_vote_and_safe_acknowledgement(self):
-        result = self.api.accept(self.envelope('alice', 'old-version', '/anc-vote ' + self.proposal['id'] + ' 2 approve'))
+        result = self.api.accept(self.envelope('alice', 'old-version', '/loom-vote ' + self.proposal['id'] + ' 2 approve'))
         self.assertTrue(result['human_decision']['handled'])
         with self.c.db.transaction() as db:
             self.assertEqual(db.execute('SELECT count(*) FROM votes').fetchone()[0], 0)
@@ -79,7 +79,7 @@ class PlatformDecisionTests(unittest.TestCase):
     def test_changed_retry_cannot_turn_saved_message_into_vote(self):
         event = self.envelope('alice', 'stable-original', 'Ordinary business request')
         self.api.accept(event)
-        changed = self.envelope('alice', 'stable-original', '/anc-vote ' + self.proposal['id'] + ' 1 approve')
+        changed = self.envelope('alice', 'stable-original', '/loom-vote ' + self.proposal['id'] + ' 1 approve')
         self.assertNotIn('human_decision', self.api.accept(changed))
         with self.c.db.transaction() as db:
             self.assertEqual(db.execute('SELECT count(*) FROM votes').fetchone()[0], 0)

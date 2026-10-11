@@ -4,7 +4,7 @@ from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from anc.appcontainer import run
+from loom.appcontainer import run
 
 job = json.loads(Path(sys.argv[1]).read_text(encoding='utf-8'))
 result = run(job['name'], job['argv'], job['cwd'], job['environment'],

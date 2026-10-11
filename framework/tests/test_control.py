@@ -6,8 +6,8 @@ import unittest
 import uuid
 from unittest.mock import patch
 
-from anc.control import Conflict, Control, RecoveryRequired
-from anc.policy import Denied, StaleContext
+from loom.control import Conflict, Control, RecoveryRequired
+from loom.policy import Denied, StaleContext
 
 
 def fixture(root):
@@ -108,7 +108,7 @@ class ControlTests(unittest.TestCase):
         saved = self.c.save_reply(g, '客户当前人数 8')
         oid = self.c.queue_reply(g, saved['id'])
         from datetime import datetime, timezone
-        with patch('anc.policy.datetime') as clock:
+        with patch('loom.policy.datetime') as clock:
             clock.fromisoformat.side_effect = datetime.fromisoformat
             clock.now.return_value = datetime(2099, 1, 2, tzinfo=timezone.utc)
             with self.assertRaises(Denied):
@@ -247,7 +247,7 @@ class ControlTests(unittest.TestCase):
         path.parent.mkdir(parents=True, exist_ok=True)
         source = self.root / 'preserved.txt'
         source.write_bytes(b'unchanged')
-        from anc.control import digest
+        from loom.control import digest
         stage = path.with_name('.' + digest(b'link-attempt')[:32] + '.pending')   # the stage name is derived from the commit id
         os.link(source, stage)
         with self.assertRaises(RecoveryRequired):
@@ -304,7 +304,7 @@ class ControlTests(unittest.TestCase):
         self.assertTrue(self.c.cancel(self.a)['cancelled'])
         with self.c.db.transaction() as db:
             self.assertEqual(db.execute('SELECT state FROM outbox WHERE id=?', (oid,)).fetchone()[0], 'cancelled')
-        from anc.policy import Context
+        from loom.policy import Context
         with self.assertRaises(Denied):
             self.c.cancel(Context('bob', self.a.scope, self.a.epoch, self.a.task))
 

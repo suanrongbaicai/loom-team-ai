@@ -35,15 +35,15 @@ class DatabaseLifetimeTests(unittest.TestCase):
         self.control_case('test_send_result_and_outbox_are_committed_together')
 
     def test_abrupt_process_exit_retains_original_and_unknown_send(self):
-        from anc.control import Control
-        from anc.policy import Context,Denied
-        from anc.transport import Sender
+        from loom.control import Control
+        from loom.policy import Context,Denied
+        from loom.transport import Sender
         Path('.test-work').mkdir(exist_ok=True)
         with tempfile.TemporaryDirectory(dir='.test-work') as folder:
             root=Path(folder).resolve()
             script=r'''import json,os,sys
 from pathlib import Path
-from anc.control import Control
+from loom.control import Control
 from tests.test_control import fixture
 root=Path(sys.argv[1]);c=Control(root/'control');c.set_policy(fixture(root),'isolated-lifetime-test')
 with c.db.keep_open() as held:

@@ -5,7 +5,7 @@ import os
 import tempfile
 import unittest
 
-from anc.control import Control
+from loom.control import Control
 from tests.test_control import fixture
 from tools import purge_test_data as purge
 
@@ -270,7 +270,7 @@ class PurgeTests(unittest.TestCase):
         with self.c.db.transaction() as db:
             db.execute("INSERT INTO commits VALUES('commit-shared','event-real-one',1,2,'d','x','committed',?,'alice','now')", (self.test_task.task,))
             db.execute("UPDATE outbox SET task=?, payload_document='event-test-one' WHERE id='out-unknown'", (self.test_task.task,))
-            db.execute("INSERT INTO skill_uses VALUES(?,?,?,?)", (self.test_task.task, 'anc-onboard', 'v2', 'loaded'))
+            db.execute("INSERT INTO skill_uses VALUES(?,?,?,?)", (self.test_task.task, 'loom-onboard', 'v2', 'loaded'))
         seed = json.loads(json.dumps(self.seed))
         seed['tasks'] = []
         seed['tasks_partial'] = [self.test_task.task]

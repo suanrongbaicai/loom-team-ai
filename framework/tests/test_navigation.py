@@ -1,7 +1,7 @@
 import unittest
 
-from anc.control import Conflict
-from anc.policy import Denied
+from loom.control import Conflict
+from loom.policy import Denied
 from tests import test_runtime
 
 

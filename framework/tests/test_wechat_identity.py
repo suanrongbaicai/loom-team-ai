@@ -2,8 +2,8 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
 
-from anc.policy import Denied
-from anc.wechat_identity import recheck_live, roots_from_paths
+from loom.policy import Denied
+from loom.wechat_identity import recheck_live, roots_from_paths
 
 
 class LiveIdentityTests(unittest.TestCase):

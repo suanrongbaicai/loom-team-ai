@@ -27,7 +27,7 @@ BACKUP_MAX_AGE = 36 * 3600
 
 
 def backups_root(control):
-    """<ANC root>/Backups/daily, beside (not inside) the Control folder, same root the databases are named against."""
+    """<LOOM root>/Backups/daily, beside (not inside) the Control folder, same root the databases are named against."""
     return Path(control).parent.parent / 'Backups' / 'daily'
 
 

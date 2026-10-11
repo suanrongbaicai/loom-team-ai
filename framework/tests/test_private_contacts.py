@@ -6,13 +6,13 @@ import threading
 import unittest
 from unittest.mock import patch
 
-from anc.control import Control
-from anc.gateway import Inbox, FeishuTransport
-from anc.membership import MessageRejected
-from anc.policy import Context, Denied
-from anc.private_contacts import PrivateContacts, admission
-from anc.rpc import RuntimeAPI
-from anc.transport import Sender
+from loom.control import Control
+from loom.gateway import Inbox, FeishuTransport
+from loom.membership import MessageRejected
+from loom.policy import Context, Denied
+from loom.private_contacts import PrivateContacts, admission
+from loom.rpc import RuntimeAPI
+from loom.transport import Sender
 from tools.controller_entry import ConfiguredAPI
 from tests.test_control import fixture
 
@@ -302,7 +302,7 @@ class ContactTests(unittest.TestCase):
                     db.execute('UPDATE policy SET body=?',(json.dumps(state),))
 
     def test_contact_dynamic_tool_still_requires_exact_host_thread_turn_binding(self):
-        from anc.model_backend import Host, Run
+        from loom.model_backend import Host, Run
         from types import SimpleNamespace
         api=RuntimeAPI(self.c,Path.cwd(),b'x'*48,lambda _:True,contacts=self.contacts)
         token=api.issue(self.ctx)
@@ -313,8 +313,8 @@ class ContactTests(unittest.TestCase):
             host.by_thread['thread-1']=run
             for thread,turn in (('other-thread','turn-1'),('thread-1','other-turn')):
                 with self.subTest(thread=thread,turn=turn),self.assertRaises(Denied):
-                    host.request('item/tool/call',{'threadId':thread,'turnId':turn,'tool':'anc_contact_private','arguments':{}})
+                    host.request('item/tool/call',{'threadId':thread,'turnId':turn,'tool':'loom_contact_private','arguments':{}})
             api.revoke(token)
-            with self.assertRaises(Denied):host.request('item/tool/call',{'threadId':'thread-1','turnId':'turn-1','tool':'anc_contact_private','arguments':{}})
+            with self.assertRaises(Denied):host.request('item/tool/call',{'threadId':'thread-1','turnId':'turn-1','tool':'loom_contact_private','arguments':{}})
         finally:
             host.close()

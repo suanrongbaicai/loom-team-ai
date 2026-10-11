@@ -4,8 +4,8 @@ import tempfile
 import unittest
 from unittest import mock
 
-from anc.control import Control
-from anc.skills import Skills, tree_digest
+from loom.control import Control
+from loom.skills import Skills, tree_digest
 from tests.test_control import fixture
 from tests.test_skills_switch import write_skill
 from tools import skill_add
@@ -27,19 +27,19 @@ class SkillAddTests(unittest.TestCase):
         self.temp.cleanup()
 
     def run_add(self, journal=None):
-        return skill_add.add(self.c, self.homes, 'anc-business', 'v1', self.src, 'test-approval', journal or self.journal)
+        return skill_add.add(self.c, self.homes, 'loom-business', 'v1', self.src, 'test-approval', journal or self.journal)
 
     def rows(self):
         with self.c.db.transaction() as db:
-            return {r['scope']: (r['version'], r['digest'], r['stage']) for r in db.execute("SELECT * FROM skill_deployments WHERE skill='anc-business'")}
+            return {r['scope']: (r['version'], r['digest'], r['stage']) for r in db.execute("SELECT * FROM skill_deployments WHERE skill='loom-business'")}
 
     def test_adds_skill_everywhere_and_never_writes_loaded(self):
         result = self.run_add()
         self.assertEqual(result['stage'], 'deployed')
         self.assertEqual(self.rows(), {s: ('v1', self.digest, 'deployed') for s in self.homes})
         for work in self.homes.values():
-            self.assertEqual(tree_digest(work / '.agents/skills/anc-business')[0], self.digest)
-        facts = skill_add.facts(self.c.root / 'runtime.sqlite', {}, 'anc-business', 'v1', self.src)
+            self.assertEqual(tree_digest(work / '.agents/skills/loom-business')[0], self.digest)
+        facts = skill_add.facts(self.c.root / 'runtime.sqlite', {}, 'loom-business', 'v1', self.src)
         self.assertEqual((facts['loaded_audits'], facts['published_audits']), (0, 1))
 
     def test_failure_removes_only_what_this_run_created(self):
@@ -56,13 +56,13 @@ class SkillAddTests(unittest.TestCase):
                 self.run_add()
         self.assertEqual(self.rows(), {})
         for work in self.homes.values():
-            self.assertFalse((work / '.agents/skills/anc-business').exists())
+            self.assertFalse((work / '.agents/skills/loom-business').exists())
         self.assertEqual(json.loads(self.journal.read_text(encoding='utf8'))['stage'], 'rolled-back')
 
     def test_second_run_is_idempotent_and_does_not_publish_twice(self):
         self.run_add()
         self.run_add(self.root / 'journal2.json')
-        facts = skill_add.facts(self.c.root / 'runtime.sqlite', {}, 'anc-business', 'v1', self.src)
+        facts = skill_add.facts(self.c.root / 'runtime.sqlite', {}, 'loom-business', 'v1', self.src)
         self.assertEqual(facts['published_audits'], 1)
         self.assertEqual(len(self.rows()), 2)
 
@@ -73,7 +73,7 @@ class SkillAddTests(unittest.TestCase):
         self.assertEqual(self.rows(), {})
 
     def test_refuses_a_workspace_with_different_content(self):
-        write_skill(self.homes['group'] / '.agents/skills/anc-business', 'someone else')
+        write_skill(self.homes['group'] / '.agents/skills/loom-business', 'someone else')
         with self.assertRaises(RuntimeError):
             self.run_add()
         self.assertEqual(self.rows(), {})

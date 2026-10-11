@@ -6,12 +6,12 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from anc.control import Control
-from anc.generated_images import GeneratedImages
-from anc.policy import Denied
-from anc.references import passage
-from anc.stages import inspect, normalize
-from anc.transport import NotSent, Sender
+from loom.control import Control
+from loom.generated_images import GeneratedImages
+from loom.policy import Denied
+from loom.references import passage
+from loom.stages import inspect, normalize
+from loom.transport import NotSent, Sender
 from tests.test_control import fixture, grant
 from tests.test_generated_images import png
 from tests import test_generated_images as image_tests
@@ -34,7 +34,7 @@ class HandoffTests(unittest.TestCase):
         if ctx.task in self.declarations: return copy.deepcopy(self.declarations[ctx.task])
         row=self.c.read(ctx,image);event='handoff-'+ctx.task[:12]
         passage(self.c,ctx,event,0,'合成夹具：实际采用此已保存原图，不重新生成。','adopt-'+ctx.task,
-                [{'id':image,'revision':row['revision'],'quote':'anc-native-image-v1'}])
+                [{'id':image,'revision':row['revision'],'quote':'loom-native-image-v1'}])
         receipt=inspect(self.c,ctx)
         declaration={'stage':'current','basis':'stage','events':[event]}
         for kind,count in receipt['commits_by_layer'].items(): declaration[kind]={'state':'updated' if count else 'no_change','reason':'夹具按真实提交与采用声明。'}

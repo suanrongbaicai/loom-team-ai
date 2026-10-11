@@ -4,8 +4,8 @@ import json
 import tempfile
 import unittest
 
-from anc.control import Control
-from anc.skills import Skills, tree_digest
+from loom.control import Control
+from loom.skills import Skills, tree_digest
 from tests.test_control import fixture
 from tools import skills_switch
 
@@ -25,11 +25,11 @@ class SkillsSwitchTests(unittest.TestCase):
         self.c.set_policy(fixture(self.root), 'test-policy')
         self.homes = self.make_homes()
         skills = Skills(self.c)
-        skills.publish('anc-onboard', 'v1', write_skill(self.root / 'src-v1', 'old'), 'fixture-v1')
+        skills.publish('loom-onboard', 'v1', write_skill(self.root / 'src-v1', 'old'), 'fixture-v1')
         for scope, work in self.homes.items():
-            skills.deploy(scope, 'anc-onboard', 'v1', work)
-        self.sources = {'anc-onboard': write_skill(self.root / 'src-v2', 'new onboard'),
-                        'anc-customer-profile': write_skill(self.root / 'src-profile', 'profile')}
+            skills.deploy(scope, 'loom-onboard', 'v1', work)
+        self.sources = {'loom-onboard': write_skill(self.root / 'src-v2', 'new onboard'),
+                        'loom-customer-profile': write_skill(self.root / 'src-profile', 'profile')}
         self.journal = self.root / 'journal.json'
         self.v1 = tree_digest(self.root / 'src-v1')[0]
 
@@ -53,13 +53,13 @@ class SkillsSwitchTests(unittest.TestCase):
         self.assertEqual(after['published_audits'], before['published_audits'] + 2)
         self.assertEqual(after['loaded_audits'], before['loaded_audits'])
         for scope, work in self.homes.items():
-            self.assertEqual(tree_digest(work / '.agents/skills/anc-onboard')[0], tree_digest(self.sources['anc-onboard'])[0])
-            self.assertEqual(tree_digest(work / '.agents/skills/anc-customer-profile')[0], tree_digest(self.sources['anc-customer-profile'])[0])
-            self.assertEqual(tree_digest(work / '.agents/skills-retired/anc-onboard-v1-T1')[0], self.v1)
-        self.assertEqual(self.deployments()[('group', 'anc-onboard')], ('v2', 'deployed'))
+            self.assertEqual(tree_digest(work / '.agents/skills/loom-onboard')[0], tree_digest(self.sources['loom-onboard'])[0])
+            self.assertEqual(tree_digest(work / '.agents/skills/loom-customer-profile')[0], tree_digest(self.sources['loom-customer-profile'])[0])
+            self.assertEqual(tree_digest(work / '.agents/skills-retired/loom-onboard-v1-T1')[0], self.v1)
+        self.assertEqual(self.deployments()[('group', 'loom-onboard')], ('v2', 'deployed'))
         with self.c.db.transaction() as db:
-            self.assertEqual(db.execute("SELECT state FROM skills WHERE id='anc-onboard' AND version='v1'").fetchone()[0], 'active')
-            self.assertTrue(Path(db.execute("SELECT path FROM skills WHERE id='anc-onboard' AND version='v1'").fetchone()[0]).is_dir())
+            self.assertEqual(db.execute("SELECT state FROM skills WHERE id='loom-onboard' AND version='v1'").fetchone()[0], 'active')
+            self.assertTrue(Path(db.execute("SELECT path FROM skills WHERE id='loom-onboard' AND version='v1'").fetchone()[0]).is_dir())
 
     def test_failure_after_first_scope_restores_every_scope_and_deployment_rows(self):
         def boom(scope):
@@ -67,10 +67,10 @@ class SkillsSwitchTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             self.run_switch(after_scope=boom)
         for work in self.homes.values():
-            self.assertEqual(tree_digest(work / '.agents/skills/anc-onboard')[0], self.v1)
-            self.assertFalse((work / '.agents/skills/anc-customer-profile').exists())
+            self.assertEqual(tree_digest(work / '.agents/skills/loom-onboard')[0], self.v1)
+            self.assertFalse((work / '.agents/skills/loom-customer-profile').exists())
         self.assertEqual({k: v[0] for k, v in self.deployments().items()},
-                         {('alice-private', 'anc-onboard'): 'v1', ('group', 'anc-onboard'): 'v1'})
+                         {('alice-private', 'loom-onboard'): 'v1', ('group', 'loom-onboard'): 'v1'})
         self.assertEqual(json.loads(self.journal.read_text(encoding='utf8'))['stage'], 'rolled-back')
         self.assertEqual(skills_switch.counts(self.c)['loaded_audits'], 0)
 
@@ -82,7 +82,7 @@ class SkillsSwitchTests(unittest.TestCase):
         self.assertEqual(skills_switch.counts(self.c)['published_audits'], published_once)
 
     def test_unexpected_workspace_or_active_work_stops_before_any_change(self):
-        (self.homes['group'] / '.agents/skills/anc-onboard/SKILL.md').write_text('local edit', encoding='utf-8')
+        (self.homes['group'] / '.agents/skills/loom-onboard/SKILL.md').write_text('local edit', encoding='utf-8')
         with self.assertRaisesRegex(RuntimeError, 'not the registered v1'):
             self.run_switch()
         self.assertFalse((self.homes['alice-private'] / '.agents/skills-retired').exists())
@@ -140,7 +140,7 @@ class ExecuteTests(SkillsSwitchTests):
             self.run_execute(ops)
         self.assertEqual(ops.calls, ['stop', 'start'])
         self.assertEqual(self.status()['controller'], 'restarted-after-failure')
-        self.assertEqual(tree_digest(self.homes['group'] / '.agents/skills/anc-onboard')[0], self.v1)
+        self.assertEqual(tree_digest(self.homes['group'] / '.agents/skills/loom-onboard')[0], self.v1)
 
     def test_stop_that_failed_while_controller_still_runs_does_not_start_a_second_one(self):
         ops = FakeOps(state='running', stop_raises=True)
@@ -159,11 +159,11 @@ class ExecuteTests(SkillsSwitchTests):
     def test_ordinary_switch_failure_is_rolled_back_then_controller_restarts(self):
         from unittest import mock
         ops = FakeOps()
-        with mock.patch('anc.skills.Skills.deploy', side_effect=RuntimeError('deploy failed')):
+        with mock.patch('loom.skills.Skills.deploy', side_effect=RuntimeError('deploy failed')):
             with self.assertRaises(RuntimeError):
                 self.run_execute(ops)
         self.assertEqual(ops.calls, ['stop', 'start'])
-        self.assertEqual(tree_digest(self.homes['alice-private'] / '.agents/skills/anc-onboard')[0], self.v1)
+        self.assertEqual(tree_digest(self.homes['alice-private'] / '.agents/skills/loom-onboard')[0], self.v1)
         self.assertEqual(self.status()['controller'], 'restarted-after-failure')
 
     def test_failed_restore_keeps_the_controller_stopped_and_says_needs_attention(self):
@@ -173,9 +173,9 @@ class ExecuteTests(SkillsSwitchTests):
 
         def damaged(c, homes, journal, stamp):
             import shutil
-            shutil.rmtree(homes['alice-private'] / '.agents/skills-retired/anc-onboard-v1-T1')   # v1 copy lost: cannot be confirmed
+            shutil.rmtree(homes['alice-private'] / '.agents/skills-retired/loom-onboard-v1-T1')   # v1 copy lost: cannot be confirmed
             return real_restore(c, homes, journal, stamp)
-        with mock.patch('anc.skills.Skills.deploy', side_effect=RuntimeError('deploy failed')), \
+        with mock.patch('loom.skills.Skills.deploy', side_effect=RuntimeError('deploy failed')), \
                 mock.patch.object(skills_switch, 'restore', damaged):
             with self.assertRaises(skills_switch.RollbackFailed):
                 self.run_execute(ops)
@@ -206,8 +206,8 @@ class LinkTests(SkillsSwitchTests):
 
     def test_existing_profile_deployment_row_or_directory_stops_the_read_only_check(self):
         skills_switch.precheck(self.c, self.homes, self.sources)
-        Skills(self.c).publish('anc-customer-profile', 'v1', self.sources['anc-customer-profile'], 'earlier')
-        Skills(self.c).deploy('alice-private', 'anc-customer-profile', 'v1', self.homes['alice-private'])
+        Skills(self.c).publish('loom-customer-profile', 'v1', self.sources['loom-customer-profile'], 'earlier')
+        Skills(self.c).deploy('alice-private', 'loom-customer-profile', 'v1', self.homes['alice-private'])
         with self.assertRaises(RuntimeError):
             skills_switch.precheck(self.c, self.homes, self.sources)
 
@@ -223,11 +223,11 @@ class SharedWorkTests(unittest.TestCase):
         shared, own = self.root / 'shared' / 'Work', self.root / 'own' / 'Work'
         self.homes = {'alice-private': shared, 'group': shared, 'carol': own}
         skills = Skills(self.c)
-        skills.publish('anc-onboard', 'v1', write_skill(self.root / 'src-v1', 'old'), 'fixture-v1')
+        skills.publish('loom-onboard', 'v1', write_skill(self.root / 'src-v1', 'old'), 'fixture-v1')
         for scope, work in self.homes.items():
-            skills.deploy(scope, 'anc-onboard', 'v1', work)
-        self.sources = {'anc-onboard': write_skill(self.root / 'src-v2', 'new onboard'),
-                        'anc-customer-profile': write_skill(self.root / 'src-profile', 'profile')}
+            skills.deploy(scope, 'loom-onboard', 'v1', work)
+        self.sources = {'loom-onboard': write_skill(self.root / 'src-v2', 'new onboard'),
+                        'loom-customer-profile': write_skill(self.root / 'src-profile', 'profile')}
         self.journal = self.root / 'journal.json'
         self.v1 = tree_digest(self.root / 'src-v1')[0]
 
@@ -254,10 +254,10 @@ class SharedWorkTests(unittest.TestCase):
         self.assertEqual(skills_switch.counts(self.c)['published_audits'], before['published_audits'] + 2)
         self.assertEqual(len(list((self.homes['group'] / '.agents/skills-retired').iterdir())), 1)
         for scope in self.homes:
-            self.assertEqual(self.deployments()[(scope, 'anc-onboard')], 'v2')
-            self.assertEqual(self.deployments()[(scope, 'anc-customer-profile')], 'v1')
+            self.assertEqual(self.deployments()[(scope, 'loom-onboard')], 'v2')
+            self.assertEqual(self.deployments()[(scope, 'loom-customer-profile')], 'v1')
         for work in {str(w): w for w in self.homes.values()}.values():
-            self.assertEqual(tree_digest(work / '.agents/skills/anc-onboard')[0], tree_digest(self.sources['anc-onboard'])[0])
+            self.assertEqual(tree_digest(work / '.agents/skills/loom-onboard')[0], tree_digest(self.sources['loom-onboard'])[0])
 
     def test_failure_after_the_second_scope_of_the_shared_work_restores_directory_once_and_all_rows(self):
         def boom(scope):
@@ -266,9 +266,9 @@ class SharedWorkTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             self.switch(after_scope=boom)
         for work in self.homes.values():
-            self.assertEqual(tree_digest(work / '.agents/skills/anc-onboard')[0], self.v1)
-            self.assertFalse((work / '.agents/skills/anc-customer-profile').exists())
-        self.assertEqual(self.deployments(), {(scope, 'anc-onboard'): 'v1' for scope in self.homes})
+            self.assertEqual(tree_digest(work / '.agents/skills/loom-onboard')[0], self.v1)
+            self.assertFalse((work / '.agents/skills/loom-customer-profile').exists())
+        self.assertEqual(self.deployments(), {(scope, 'loom-onboard'): 'v1' for scope in self.homes})
         self.assertEqual(json.loads(self.journal.read_text(encoding='utf8'))['stage'], 'rolled-back')
 
     def test_failure_after_the_first_scope_of_the_shared_work_is_also_restored(self):
@@ -277,13 +277,13 @@ class SharedWorkTests(unittest.TestCase):
                 raise RuntimeError('injected after the first scope')
         with self.assertRaises(RuntimeError):
             self.switch(after_scope=boom)
-        self.assertEqual(self.deployments(), {(scope, 'anc-onboard'): 'v1' for scope in self.homes})
-        self.assertEqual(tree_digest(self.homes['group'] / '.agents/skills/anc-onboard')[0], self.v1)
+        self.assertEqual(self.deployments(), {(scope, 'loom-onboard'): 'v1' for scope in self.homes})
+        self.assertEqual(tree_digest(self.homes['group'] / '.agents/skills/loom-onboard')[0], self.v1)
 
     def test_scopes_of_one_shared_work_must_start_from_the_same_v1_registration(self):
         with self.c.db.transaction() as db:
-            db.execute("DELETE FROM skill_deployments WHERE scope='group' AND skill='anc-onboard'")
-        with self.assertRaisesRegex(RuntimeError, 'not registered at anc-onboard v1'):
+            db.execute("DELETE FROM skill_deployments WHERE scope='group' AND skill='loom-onboard'")
+        with self.assertRaisesRegex(RuntimeError, 'not registered at loom-onboard v1'):
             self.switch()
 
 

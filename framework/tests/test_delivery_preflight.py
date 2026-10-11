@@ -3,11 +3,11 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
-from anc.control import Control
-from anc.gateway import FeishuTransport
-from anc.membership import AudienceUnavailable
-from anc.scheduler import Scheduler
-from anc.transport import Sender
+from loom.control import Control
+from loom.gateway import FeishuTransport
+from loom.membership import AudienceUnavailable
+from loom.scheduler import Scheduler
+from loom.transport import Sender
 from tests import test_transport as fixture
 
 
@@ -46,7 +46,7 @@ class PreflightTests(unittest.TestCase):
         self.scheduler=Scheduler(self.c,SimpleNamespace(),{}, {}, self.sender)
 
     def pump(self,at):
-        with patch('anc.scheduler.time.time',return_value=at):
+        with patch('loom.scheduler.time.time',return_value=at):
             return self.scheduler.send_saved()
 
     def test_token_failure_waits_across_restart_then_sends_exact_saved_text_once(self):

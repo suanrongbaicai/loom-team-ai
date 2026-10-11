@@ -5,7 +5,7 @@ import shutil
 import subprocess
 import unittest
 
-from anc.ingress import stable
+from loom.ingress import stable
 
 
 @unittest.skipUnless(shutil.which('powershell.exe'), 'Windows PowerShell required')

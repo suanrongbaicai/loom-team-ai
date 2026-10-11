@@ -3,7 +3,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from anc.control import Control
+from loom.control import Control
 from tests.test_control import fixture
 from tools import provision as pv
 
@@ -46,7 +46,7 @@ class ProvisionTests(unittest.TestCase):
             self.assertEqual(db.execute("SELECT COUNT(*) FROM skills WHERE state='active'").fetchone()[0], n)
         for scope, item in self.policy['scopes'].items():
             self.assertTrue(Path(item['root']).is_dir())
-            self.assertTrue((Path(self.workspaces[scope]) / '.agents' / 'skills' / 'anc-work-records' / 'SKILL.md').is_file())
+            self.assertTrue((Path(self.workspaces[scope]) / '.agents' / 'skills' / 'loom-work-records' / 'SKILL.md').is_file())
 
     def test_never_overwrites_and_checks_inputs(self):
         pv.provision(**self.args)
@@ -134,11 +134,11 @@ class ProvisionTests(unittest.TestCase):
         workspace = Path(self.workspaces[first])
         workspace.mkdir(parents=True)
         (workspace / 'keep.txt').write_text('mine')
-        (workspace / '.agents' / 'skills' / 'anc-work-records').mkdir(parents=True)
+        (workspace / '.agents' / 'skills' / 'loom-work-records').mkdir(parents=True)
         self.assertIn('already holds skill deployments', self.refusal_reason())
         import shutil
         shutil.rmtree(workspace / '.agents')
-        from anc import skills
+        from loom import skills
         original = skills.Skills.deploy
         calls = []
 
@@ -159,7 +159,7 @@ class ProvisionTests(unittest.TestCase):
 
     def test_a_cleanup_that_cannot_finish_says_so(self):
         import shutil
-        from anc import skills
+        from loom import skills
         original, real_rmtree = skills.Skills.deploy, shutil.rmtree
 
         def broken(self_, *args, **kwargs):
@@ -175,7 +175,7 @@ class ProvisionTests(unittest.TestCase):
         self.assertNotIn('removed (checked)', message)
 
     def test_a_failure_midway_removes_everything_it_created(self):
-        from anc import skills
+        from loom import skills
         original = skills.Skills.deploy
         calls = []
 

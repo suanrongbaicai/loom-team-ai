@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 
-from anc.policy import Denied
+from loom.policy import Denied
 from tests import test_runtime
 
 
@@ -77,7 +77,7 @@ class WorkBatchTests(unittest.TestCase):
         with self.assertRaises(Denied):self.api.call(token,'record',dict(change,text='更换同次提交'))
 
     def test_event_delta_stale_base_preserves_intent_not_silent_merge(self):
-        from anc.control import Conflict
+        from loom.control import Conflict
         token=self.ready()
         self.api.call(token,'record',{'id':'work-event','kind':'event','text':'原经过。','commit_id':'original'})
         change={'id':'work-event','kind':'event','append':True,'base':1,'text':'\n新进展。','commit_id':'new-progress'}
@@ -94,7 +94,7 @@ class WorkBatchTests(unittest.TestCase):
         with self.assertRaises(Denied):self.api.call(token,'record',{'id':'bobs-event','kind':'event','append':True,'base':1,'text':'越权','commit_id':'illegal'})
 
     def test_event_delta_recovers_exactly_once_after_prepared_interruption(self):
-        from anc.control import Control,RecoveryRequired
+        from loom.control import Control,RecoveryRequired
         token=self.ready()
         self.api.call(token,'record',{'id':'work-event','kind':'event','text':'原经过。','commit_id':'original'})
         def interrupt(stage):

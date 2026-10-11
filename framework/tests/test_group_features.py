@@ -1,8 +1,8 @@
 import json
 import unittest
 
-from anc import group_settings, supplements
-from anc.policy import Context, Denied
+from loom import group_settings, supplements
+from loom.policy import Context, Denied
 from tests.test_group_admission import GroupTests as Base, TENANT
 
 
@@ -23,11 +23,11 @@ class GroupFeatureTests(Base):
         import hashlib
         import tempfile
         from pathlib import Path
-        from anc.skills import tree_digest
+        from loom.skills import tree_digest
         base = Path(tempfile.mkdtemp(dir=self.root))
         with self.c.db.transaction() as db:
             db.execute('DELETE FROM skill_deployments WHERE scope IN (?, ?, ?)', (scope, 'alice-private', 'bob-private'))
-            for key in ('anc-work-records', 'anc-onboard'):
+            for key in ('loom-work-records', 'loom-onboard'):
                 folder = base / key
                 folder.mkdir()
                 (folder / 'SKILL.md').write_text('# ' + key, encoding='utf-8')

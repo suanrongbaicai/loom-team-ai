@@ -7,8 +7,8 @@ import sys
 
 from tools.worker_entry import wait_child, write_result
 
-from anc.policy import Context
-from anc.worker import make_job, command
+from loom.policy import Context
+from loom.worker import make_job, command
 
 
 class WorkerIsolationTests(unittest.TestCase):
@@ -74,7 +74,7 @@ class WorkerIsolationTests(unittest.TestCase):
         configs = [args[i+1] for i,v in enumerate(args[:-1]) if v == '-c']
         for value in [base[i+1] for i,v in enumerate(base[:-1]) if v == '-c']:
             self.assertIn(value, configs)
-        provider = tomllib.loads(next(v for v in configs if v.startswith('model_providers.')))['model_providers']['anc-openai-http']
+        provider = tomllib.loads(next(v for v in configs if v.startswith('model_providers.')))['model_providers']['loom-openai-http']
         self.assertTrue(provider['requires_openai_auth'])
         self.assertFalse(provider['supports_websockets'])
         self.assertEqual(provider['name'], 'OpenAI')
@@ -109,7 +109,7 @@ class WorkerIsolationTests(unittest.TestCase):
             self.assertNotEqual(old['workspace'], new['workspace'])
             self.assertNotEqual(old['environment']['TEMP'], new['environment']['TEMP'])
             configs = [new['argv'][i+1] for i, v in enumerate(new['argv'][:-1]) if v == '-c']
-            profile = tomllib.loads(next(v for v in configs if v.startswith('permissions.anc=')))['permissions']['anc']
+            profile = tomllib.loads(next(v for v in configs if v.startswith('permissions.loom=')))['permissions']['loom']
             files = profile['filesystem']
             self.assertEqual(files[':root'], 'deny')
             self.assertEqual(profile['extends'], ':workspace')

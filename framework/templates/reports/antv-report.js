@@ -1,4 +1,4 @@
-/* ANC adapter: fixed data slots -> official AntV G2 v5 Spec Mode.
+/* LOOM adapter: fixed data slots -> official AntV G2 v5 Spec Mode.
  * G2 owns drawing, tooltip placement, hit testing and legend filtering.
  * No network calls, generated JavaScript, or data-dependent HTML. */
 (function (root) {
@@ -6,7 +6,7 @@
   const chartKinds = ['comparison','trend','composition','distribution','relationship','matrix','waterfall','candlestick','gantt'];
   const finite = value => typeof value === 'number' && Number.isFinite(value);
   const number = value => finite(value) ? String(value) : '未提供';
-  // Colours come from the page theme (anc-theme.css) when a document exists; static/Node rendering uses the light fallbacks.
+  // Colours come from the page theme (loom-theme.css) when a document exists; static/Node rendering uses the light fallbacks.
   const cssVar = (name, fallback) => { try { return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback; } catch (e) { return fallback; } };
   const isDark = () => { try { const t = document.documentElement.getAttribute('data-theme'); return t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches; } catch (e) { return false; } };
   const palette = () => ({s1: cssVar('--s1', '#2a78d6'), s2: cssVar('--s2', '#eb6834'), s3: cssVar('--s3', '#1baf7a'),
@@ -109,7 +109,7 @@
     if(!options){container.textContent='本次没有可绘制的已知数值，请查看明细。';return;}
     const chart=new root.G2.Chart({container,autoFit:true,height:Math.max(340,
       ['gantt','comparison'].includes(spec.template)?Math.min(760,spec.rows.length*34+90):380)});
-    container.ancChart=chart;
+    container.loomChart=chart;
     chart.options(options);
     await chart.render();
     container.dataset.ready='true';
@@ -119,6 +119,6 @@
     document.addEventListener('keydown',e=>{if(e.key==='Escape')chart.emit('tooltip:hide');});
     return chart;
   }
-  root.ANCChart={build,mount,chartKinds};
-  if(typeof module!=='undefined')module.exports=root.ANCChart;
+  root.LOOMChart={build,mount,chartKinds};
+  if(typeof module!=='undefined')module.exports=root.LOOMChart;
 })(typeof window!=='undefined'?window:globalThis);

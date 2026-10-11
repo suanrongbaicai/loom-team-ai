@@ -11,9 +11,9 @@ from datetime import datetime, timezone
 import hashlib
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from anc.wechat_boundary import CaptureWindow, bounded_db_class
-from anc.wechat_runner import checked_path, verify_adapter
-from anc.wechat_identity import recheck_live
+from loom.wechat_boundary import CaptureWindow, bounded_db_class
+from loom.wechat_runner import checked_path, verify_adapter
+from loom.wechat_identity import recheck_live
 
 
 def resolve_selection(conn, selector, check):
@@ -91,8 +91,8 @@ def run(job, check, stage=lambda name: None):
             import re
             # Sender row IDs belong to this message shard, not to the unrelated
             # SenderName2Id table in message_resource.db.
-            chat=next(x for x in self.capture_window.chats if 'Msg_'+hashlib.md5(x.encode()).hexdigest()==row['_anc_table'])
-            username=row.get('_anc_sender_username')
+            chat=next(x for x in self.capture_window.chats if 'Msg_'+hashlib.md5(x.encode()).hexdigest()==row['_loom_table'])
+            username=row.get('_loom_sender_username')
             prefix=re.match(r'^([A-Za-z0-9_@.\-]{3,128}):\r?\n',message.get('content',''))
             if username and not (chat.endswith('@chatroom') and prefix and prefix[1]!=username):
                 message['sender_username']=username
@@ -206,7 +206,7 @@ def main():
     try:
         with contextlib.redirect_stdout(Quiet()), contextlib.redirect_stderr(Quiet()):
             if 'attachment' in job:
-                from anc.wechat_media_reader import run as read_attachment
+                from loom.wechat_media_reader import run as read_attachment
                 read_attachment(job, current)
             else:
                 run(job, current, stage)
@@ -218,7 +218,7 @@ def main():
             private, output = checked_path(job['private_root']), checked_path(job['run'])
             if not output.is_relative_to(private):
                 raise RuntimeError('Invalid diagnostic path')
-            from anc.control import within, write_durable
+            from loom.control import within, write_durable
             write_durable(within(output, 'failure.json'), json.dumps({
                 'stage': phase, 'error_type': type(error).__name__,
                 'frames': [{'file': Path(f.filename).name, 'line': f.lineno, 'function': f.name}

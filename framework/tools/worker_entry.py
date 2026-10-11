@@ -89,9 +89,9 @@ def main():
                 result.update(state='cancelled')
                 write_result(result_path, result)
                 return
-            if job.get('require_anc_preflight'):
+            if job.get('require_loom_preflight'):
                 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-                from anc.client import call
+                from loom.client import call
                 result['preflight_started_at'] = time.time()
                 if not call('preflight', {}).get('complete'):
                     raise RuntimeError('Full rules preflight incomplete')

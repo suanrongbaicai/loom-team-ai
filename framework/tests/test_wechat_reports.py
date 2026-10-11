@@ -8,11 +8,11 @@ import unittest
 import xml.etree.ElementTree as ET
 import zipfile
 
-from anc.control import Control, digest
-from anc.policy import Denied
-from anc.reports import Reports
-from anc.transport import Sender
-from anc.wechat import WeChat
+from loom.control import Control, digest
+from loom.policy import Denied
+from loom.reports import Reports
+from loom.transport import Sender
+from loom.wechat import WeChat
 from tests.test_control import fixture
 
 
@@ -160,10 +160,10 @@ class WeChatReportTests(unittest.TestCase):
         self.assertEqual(reopened.read(self.ctx, source), before)
 
     def test_model_batch_saves_stage_records_before_exact_file_delivery(self):
-        from anc.rpc import RuntimeAPI
-        from anc.skills import Skills
+        from loom.rpc import RuntimeAPI
+        from loom.skills import Skills
         api=RuntimeAPI(self.c,Path.cwd(),b'x'*32)
-        for name in ('anc-work-records','anc-onboard'):
+        for name in ('loom-work-records','loom-onboard'):
             Skills(self.c).publish(name,'v1',Path('skills')/name,'fixture')
             Skills(self.c).deploy(self.ctx.scope,name,'v1',self.root/'work')
         api.rules.load(self.ctx,'SessionStart','file-stage');token=api.issue(self.ctx)
@@ -193,7 +193,7 @@ class WeChatReportTests(unittest.TestCase):
         self.assertEqual(final['state'],'queued-not-delivered')
 
     def test_feishu_file_upload_contract_and_post_upload_check(self):
-        from anc.gateway import FeishuTransport
+        from loom.gateway import FeishuTransport
         calls = []
         class Response:
             def __enter__(self): return self

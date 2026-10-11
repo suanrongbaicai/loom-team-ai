@@ -4,7 +4,7 @@ import sqlite3
 import tempfile
 import unittest
 
-from anc.database import Database
+from loom.database import Database
 
 
 class SchemaGuardTests(unittest.TestCase):
@@ -61,7 +61,7 @@ class MigrationTests(unittest.TestCase):
         import sqlite3
         import tempfile
         from pathlib import Path
-        from anc import database
+        from loom import database
         with tempfile.TemporaryDirectory() as root:
             path = Path(root) / 'x.sqlite'
             with contextlib.closing(sqlite3.connect(path, isolation_level=None)) as db:
@@ -83,7 +83,7 @@ class GroupSettingsMigrationTests(unittest.TestCase):
         import sqlite3
         import tempfile
         from pathlib import Path
-        from anc.database import Database, LATEST
+        from loom.database import Database, LATEST
         with tempfile.TemporaryDirectory() as root:
             path = Path(root) / 'runtime.sqlite'
             Database(path)
@@ -103,7 +103,7 @@ class MemberLabelsMigrationTests(unittest.TestCase):
         import sqlite3
         import tempfile
         from pathlib import Path
-        from anc.database import Database, LATEST, downgrade
+        from loom.database import Database, LATEST, downgrade
         with tempfile.TemporaryDirectory() as root:
             path = Path(root) / 'runtime.sqlite'
             Database(path)
@@ -127,7 +127,7 @@ class UsageTablesMigrationTests(unittest.TestCase):
         import sqlite3
         import tempfile
         from pathlib import Path
-        from anc.database import Database, LATEST, downgrade
+        from loom.database import Database, LATEST, downgrade
         with tempfile.TemporaryDirectory() as root:
             path = Path(root) / 'runtime.sqlite'
             Database(path)

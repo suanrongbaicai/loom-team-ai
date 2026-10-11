@@ -14,8 +14,8 @@ import shutil
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from anc.control import Control, identifier  # noqa: E402
-from anc.skills import Skills, tree_digest  # noqa: E402
+from loom.control import Control, identifier  # noqa: E402
+from loom.skills import Skills, tree_digest  # noqa: E402
 
 
 class Refused(RuntimeError):

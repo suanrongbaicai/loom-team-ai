@@ -3,8 +3,8 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from anc.control import Control
-from anc.policy import Context, Policy, Resource
+from loom.control import Control
+from loom.policy import Context, Policy, Resource
 from tests.test_control import fixture
 from tools import policy_open as po
 

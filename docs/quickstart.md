@@ -18,7 +18,7 @@ python --version
 python examples/local_demo.py
 ```
 
-演示用固定 `MockModel` 提供合成文字，用真实 `anc.control.Control` 保存原件、CL 和 Context，生成并领取 outbox，再由 `MockTransport` 返回标注为 mock 的本地回执。它不理解任意自然语言，不代表真实模型完成了推理，也没有把消息发给任何人。
+演示用固定 `MockModel` 提供合成文字，用真实 `loom.control.Control` 保存原件、CL 和 Context，生成并领取 outbox，再由 `MockTransport` 返回标注为 mock 的本地回执。它不理解任意自然语言，不代表真实模型完成了推理，也没有把消息发给任何人。
 
 你会看到：
 

@@ -1,12 +1,12 @@
-"""Run as the protected ANC administrator after reviewing the concrete proposal."""
+"""Run as the protected LOOM administrator after reviewing the concrete proposal."""
 import argparse
 import json
 from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from anc.control import Control
-from anc.governance import Governance
+from loom.control import Control
+from loom.governance import Governance
 
 
 def main():

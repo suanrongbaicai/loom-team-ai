@@ -5,9 +5,9 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from anc.control import Control, digest
-from anc.policy import Denied
-from anc.wechat_capture import WeChatCapture
+from loom.control import Control, digest
+from loom.policy import Denied
+from loom.wechat_capture import WeChatCapture
 from tests.test_control import fixture
 
 
@@ -149,16 +149,16 @@ class CaptureTests(unittest.TestCase):
             self.assertEqual(db.execute('SELECT count(*) FROM wechat_imports').fetchone()[0],0)
 
     def test_saved_capture_can_make_existing_report_without_another_approval(self):
-        from anc.reports import Reports
+        from loom.reports import Reports
         result=self.capture()
         report=Reports(self.c).generate(self.ctx,'report',result['document'],'Synthetic',
              [{'claim':'original statement','kind':'reported','message_indices':[0]}])
         self.assertIn('report',report)
 
     def test_mcp_routes_only_protected_catalog_and_bound_task(self):
-        from anc.rpc import RuntimeAPI
-        from anc.skills import Skills
-        for key in ('anc-work-records','anc-onboard'):
+        from loom.rpc import RuntimeAPI
+        from loom.skills import Skills
+        for key in ('loom-work-records','loom-onboard'):
             Skills(self.c).publish(key,'v1',Path('skills')/key,'synthetic approval')
             Skills(self.c).deploy('alice-private',key,'v1',self.root/'worker')
         api=RuntimeAPI(self.c,Path.cwd(),b'synthetic-secret',collector=self.collect)

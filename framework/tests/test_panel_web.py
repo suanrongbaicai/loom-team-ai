@@ -6,10 +6,10 @@ import unittest
 import urllib.error
 import urllib.request
 
-from anc import member_settings, panel_data
-from anc.control import Control
-from anc.policy import Context
-from anc.runtime_scopes import ScopeMap, resolve
+from loom import member_settings, panel_data
+from loom.control import Control
+from loom.policy import Context
+from loom.runtime_scopes import ScopeMap, resolve
 from tests.test_control import fixture
 from tools import panel_web
 
@@ -75,7 +75,7 @@ class PanelTests(unittest.TestCase):
     def post(self, name, body, header=True):
         headers = {'Content-Type': 'application/json'}
         if header:
-            headers['X-ANC-Panel'] = '1'
+            headers['X-LOOM-Panel'] = '1'
         request = urllib.request.Request('http://127.0.0.1:%d/api/%s' % (self.port, name), json.dumps(body).encode(), headers)
         try:
             with urllib.request.urlopen(request, timeout=10) as response:

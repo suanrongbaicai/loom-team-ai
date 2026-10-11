@@ -18,7 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 
 def bounded(argv, cwd, timeout=60, max_output=65536, memory=512*1024*1024):
-    from anc import appcontainer as win
+    from loom import appcontainer as win
     job = win.check(win.create_job(None, None), 'create maintenance job')
     proc = None
     chunks, total, overflow = [], [0], threading.Event()

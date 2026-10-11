@@ -6,8 +6,8 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from anc.policy import Denied
-from anc.wechat_runner import ProtectedCollector
+from loom.policy import Denied
+from loom.wechat_runner import ProtectedCollector
 
 
 @unittest.skipUnless(os.name == 'nt', 'Windows job-object enforcement')
@@ -29,7 +29,7 @@ class RunnerTests(unittest.TestCase):
 
     def call(self, run, guard):
         # Process protocol and Windows cleanup are real; no WeChat imported.
-        with patch('anc.wechat_runner.verify_adapter',return_value=self.root):
+        with patch('loom.wechat_runner.verify_adapter',return_value=self.root):
             return self.runner(self.grant,100,200,run,guard)
 
     def stopped(self,run):

@@ -3,10 +3,10 @@ import unittest
 from types import SimpleNamespace
 from tests import test_wechat_capture
 from tests.test_control import grant
-from anc.policy import Denied
-from anc.wechat_attachments import Attachments
-from anc.wechat_media_reader import media_id, exact_files
-from anc.mcp import handle
+from loom.policy import Denied
+from loom.wechat_attachments import Attachments
+from loom.wechat_media_reader import media_id, exact_files
+from loom.mcp import handle
 
 
 class AttachmentTests(unittest.TestCase):
@@ -62,7 +62,7 @@ class AttachmentTests(unittest.TestCase):
         self.assertEqual(reader.read(group,source,0)['state'],'read')
 
     def test_authorized_group_can_reuse_retained_original_without_live_access(self):
-        from anc.originals import get
+        from loom.originals import get
         source=self.capture()['document'];seen=[]
         def read(*args):
             seen.append(True)

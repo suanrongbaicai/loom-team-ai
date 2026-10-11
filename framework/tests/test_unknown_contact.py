@@ -4,9 +4,9 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from anc.control import Control
-from anc.policy import Denied
-from anc.rpc import RuntimeAPI
+from loom.control import Control
+from loom.policy import Denied
+from loom.rpc import RuntimeAPI
 from tests.test_control import fixture
 
 CONFIG = {'enabled': True, 'apps': ['app-alice'], 'notify': ['bob'], 'window_seconds': 86400, 'max_per_day': 20}
@@ -105,7 +105,7 @@ class UnknownContactTests(unittest.TestCase):
 
     def test_interrupted_notice_is_resumed_with_the_same_identity_and_never_sent_twice(self):
         api = RuntimeAPI(self.c, Path.cwd(), b'synthetic-secret' * 4, personnel_notices=dict(CONFIG, notify=['bob', 'alice']))
-        import anc.unknown_contact as uc
+        import loom.unknown_contact as uc
         real, calls = uc.queue, []
 
         def flaky(*args, **kwargs):
@@ -158,7 +158,7 @@ class UnknownContactTests(unittest.TestCase):
         self.assertEqual(len(self.notices()), 1)                 # cool-down now in force
 
     def test_errors_are_recorded_not_swallowed_and_never_change_admission(self):
-        import anc.unknown_contact as uc
+        import loom.unknown_contact as uc
         with patch.object(uc, '_report', side_effect=RuntimeError('boom')):
             with self.assertRaises(Denied):
                 self.api.accept(self.envelope('stranger-account-1234', 'err'))

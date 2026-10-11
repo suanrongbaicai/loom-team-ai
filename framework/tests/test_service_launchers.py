@@ -22,9 +22,9 @@ class ServiceLauncherTests(unittest.TestCase):
                 shutil.copyfile(framework / 'tools' / launcher, root / launcher)
                 (root / entry).write_text(
                     "import sys,time\n"
-                    "print('ANC nonfatal stderr',file=sys.stderr,flush=True)\n"
+                    "print('LOOM nonfatal stderr',file=sys.stderr,flush=True)\n"
                     "time.sleep(.25)\n"
-                    "print('ANC continued after stderr',flush=True)\n"
+                    "print('LOOM continued after stderr',flush=True)\n"
                     "sys.exit(7)\n", encoding='utf-8')
                 (root / 'config.json').write_text('{}', encoding='utf-8')
                 result = subprocess.run([
@@ -34,8 +34,8 @@ class ServiceLauncherTests(unittest.TestCase):
                     '-LogDirectory', str(root),
                 ], capture_output=True, timeout=20)
                 self.assertEqual(result.returncode, 7, result.stderr)
-                for suffix, marker in (('err', 'ANC nonfatal stderr'),
-                                       ('out', 'ANC continued after stderr')):
+                for suffix, marker in (('err', 'LOOM nonfatal stderr'),
+                                       ('out', 'LOOM continued after stderr')):
                     raw = (root / (log + '.' + suffix)).read_bytes()
                     encoding = 'utf-16' if raw.startswith(b'\xff\xfe') else 'utf-8'
                     self.assertIn(marker, raw.decode(encoding))

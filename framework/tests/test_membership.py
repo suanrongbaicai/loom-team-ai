@@ -6,9 +6,9 @@ import tempfile
 import unittest
 from unittest.mock import Mock
 
-from anc.control import Control
-from anc.membership import AudienceUnavailable, FeishuAPI, Membership
-from anc.policy import Denied
+from loom.control import Control
+from loom.membership import AudienceUnavailable, FeishuAPI, Membership
+from loom.policy import Denied
 from tests.test_control import fixture, grant
 
 
