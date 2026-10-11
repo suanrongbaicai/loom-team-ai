@@ -21,6 +21,13 @@ python tools/run_tests.py --quick
 
 我写了一个 [几分钟最小示例](docs/quickstart.md)：从保存一条合成介绍，到跨任务找回、权限检查、保存后发送和状态不明时拒绝重发。这里的模型和回执都是 mock。离线演示、核心检查和完整测试已在 Windows 与 Linux 验证，实际结果和环境差异见 [测试说明](docs/testing.md)。
 
+## 视频介绍
+
+- [面向团队的介绍](docs/videos/loom-for-teams.mp4)：Loom 想解决的问题，以及它怎么帮团队把事情接着做下去。
+- [技术拆解](docs/videos/loom-technical-breakdown.mp4)：三层结构（Data、CL、Context）、skill 的位置与生命周期，以及一条消息从进来到发出的过程。
+
+视频里的人名和数据均为合成示例。
+
 ## 整体怎么走
 
 ![Loom 架构](docs/images/architecture.svg)
