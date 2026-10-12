@@ -29,11 +29,11 @@ class Reports:
                 self.c._check(db, ctx, True)
                 if not db.execute('SELECT 1 FROM wechat_imports WHERE document=?', (source,)).fetchone():
                     raise Denied('Verified original source required')
-            original = self.c.read(ctx, source)
+            original = self.c.host_read(ctx, source)
             data = json.loads(original['text'])
             old = None
             if previous:
-                old = json.loads(self.c.read(ctx, previous)['text'])
+                old = json.loads(self.c.host_read(ctx, previous)['text'])
                 with self.c.db.transaction() as db:
                     if not db.execute('SELECT 1 FROM report_artifacts WHERE document=?', (previous,)).fetchone():
                         raise Denied('Previous report is not a registered artifact')
@@ -77,7 +77,7 @@ class Reports:
         with self.c.db.transaction() as db:
             existing = db.execute('SELECT * FROM report_artifacts WHERE document=?', (ident,)).fetchone()
         if existing:
-            if self.c.read(ctx, ident)['text'] != text:
+            if self.c.host_read(ctx, ident)['text'] != text:
                 raise Denied('Report request ID reused with different content')
             self.payload(ctx, ident)
             return {'report': ident, 'version': manifest['version'], 'source': source, 'state': 'saved'}
@@ -90,7 +90,7 @@ class Reports:
         else:
             write_durable(path, blob)
         self.c.register(ctx, ident, 'data')
-        current = self.c.read(ctx, ident)
+        current = self.c.host_read(ctx, ident)
         if current['revision']:
             if current['text'] != text:
                 raise Denied('Saved report metadata differs from requested version')
@@ -107,7 +107,7 @@ class Reports:
         return {'report': ident, 'version': manifest['version'], 'source': source, 'state': 'saved'}
 
     def payload(self, ctx, report):
-        saved = self.c.read(ctx, report)
+        saved = self.c.host_read(ctx, report)
         with self.c.db.transaction() as db:
             self.c._check(db, ctx)
             artifact = db.execute('SELECT * FROM report_artifacts WHERE document=?', (report,)).fetchone()
@@ -118,9 +118,9 @@ class Reports:
         if manifest.get('schema') == 'loom-record-report-v1':
             from .record_reports import verify_sources
             verify_sources(self.c, ctx, manifest)
-            source = self.c.read(ctx, artifact['source'], revision=artifact['source_revision'])
+            source = self.c.host_read(ctx, artifact['source'], revision=artifact['source_revision'])
         else:
-            source = self.c.read(ctx, artifact['source'])
+            source = self.c.host_read(ctx, artifact['source'])
         if (source['revision'] != artifact['source_revision'] or digest(source['text'].encode()) != artifact['source_digest']
                 or manifest.get('source') != artifact['source'] or manifest.get('id') != report):
             raise Denied('Report original lineage mismatch')

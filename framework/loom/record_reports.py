@@ -103,7 +103,7 @@ def generate(reports, ctx, request_id, title, items, previous=None):
         old = None
         if previous:
             reports.payload(ctx, previous)
-            old = json.loads(c.read(ctx, previous)['text'])
+            old = json.loads(c.host_read(ctx, previous)['text'])
             if old.get('schema') != 'loom-record-report-v1':
                 raise Denied('Previous report must be a saved record table')
         first = checked[0]['evidence'][0]
