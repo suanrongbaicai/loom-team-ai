@@ -2,7 +2,7 @@
 
 Steps: plan (what differs) -> idle gate -> stop services -> back up every file about to change -> copy new files and verify
 each by SHA256 -> py_compile -> start services -> wait until they run -> report.  Any failure puts the old files back and
-starts the services again.  Never touches data, configuration, credentials or skill versions (use skills_switch for those).
+starts the services again.  Never touches data, configuration, credentials or skill versions (use skill_add.py / skill_upgrade.py for skills).
 The package is a verified factory package (tools/factory.py) or any directory laid out like the framework."""
 import argparse
 import contextlib
