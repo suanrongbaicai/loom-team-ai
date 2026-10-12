@@ -70,8 +70,9 @@ class Policy:
             raise Denied('Private scope must bind one person')
         return frozenset(audience)
 
-    def can_read(self, ctx: Context, resource: Resource):
-        audience = self.recipients(ctx)
+    def can_read(self, ctx: Context, resource: Resource, audience=None):
+        """audience: recipients(ctx) already computed for this same policy and context, to check many resources at once."""
+        audience = self.recipients(ctx) if audience is None else audience
         source = self.state['scopes'].get(resource.scope)
         if not source:
             return False
@@ -119,8 +120,8 @@ class Policy:
                     return True
         return False
 
-    def require_read(self, ctx, resource):
-        if not self.can_read(ctx, resource):
+    def require_read(self, ctx, resource, audience=None):
+        if not self.can_read(ctx, resource, audience):
             # No restricted filename, owner or existence in the error.
             raise Denied('Resource unavailable in this audience')
 

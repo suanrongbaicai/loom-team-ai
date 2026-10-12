@@ -69,6 +69,15 @@ class ControlTests(unittest.TestCase):
         with self.c.db.transaction() as db:
             self.assertTrue(excerpt_was_read(db, a.task, 'note', 1, 0, 3))
 
+    def test_a_read_record_that_disappeared_still_blocks_the_task(self):
+        a = self.c.task('alice', 'alice-private')
+        self.record(a, 'note', '正文', kind='data')
+        self.c.read(a, 'note')
+        with self.c.db.transaction() as db:
+            db.execute("INSERT INTO task_reads VALUES(?, 'vanished')", (a.task,))
+        with self.assertRaises(Denied):
+            self.c.read(a, 'note')
+
     def test_on_demand_private_record_is_usable_in_group(self):
         self.record(self.a)
         g = self.c.task('bob', 'group')
