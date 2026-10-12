@@ -141,10 +141,11 @@ class BackendTests(unittest.TestCase):
         request = {'threadId': 'thread-A', 'turnId': 'turn-A', 'tool': 'loom_read',
                    'arguments': {'id': 'only-alice'}}
         try:
-            with patch.object(self.api.rules, 'load', return_value='verified'):
+            with patch.object(self.api.rules, 'load', return_value='verified') as load:
                 result = host.request('item/tool/call', request)
                 self.assertTrue(result['success'])
                 self.assertIn('private source', str(result))
+                load.assert_not_called()                     # no full rules rebuild per tool call
                 with self.assertRaises(Denied):
                     host.request('item/tool/call', dict(request, turnId='turn-B'))
                 with self.assertRaises(Denied):
