@@ -35,9 +35,16 @@
     {
       "skill": "loom-people",
       "version": "v2-knowledge-kinds",
-      "framework_identical": true,
+      "framework_identical": false,
       "registered_digest_verified": false,
       "replaces": "v1"
+    },
+    {
+      "skill": "loom-people",
+      "version": "v3-member-preferences",
+      "framework_identical": true,
+      "registered_digest_verified": false,
+      "replaces": "v2-knowledge-kinds"
     },
     {
       "skill": "loom-reports",
@@ -74,9 +81,16 @@
     {
       "skill": "loom-work-records",
       "version": "v13-recheck-dates",
-      "framework_identical": true,
+      "framework_identical": false,
       "registered_digest_verified": false,
       "replaces": "v12-correction-flow"
+    },
+    {
+      "skill": "loom-work-records",
+      "version": "v14-member-preferences",
+      "framework_identical": true,
+      "registered_digest_verified": false,
+      "replaces": "v13-recheck-dates"
     },
     {
       "skill": "antv-g2-chart",

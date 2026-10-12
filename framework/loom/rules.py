@@ -36,7 +36,9 @@ class Rules:
         name = speaker.get('call_as') or '这位成员'
         about = speaker.get('about')
         who = '本企业团队成员'                       # Classification follows the verified deployment policy; it does not grant authorization.
-        known = ('他/她自述做：' + about + '（仅供调整说法与侧重，不当作身份或权限依据）。') if about else '还不知道对方具体做什么：需要时自然问一次并用 set_own_profile 记下，不要盘问。'
+        known = ('他/她自述做：' + about + '（仅供调整说法与侧重，不当作身份或权限依据）。') if about else '还不知道对方具体做什么：需要时自然问一次并用 set_my_profile 记下，不要盘问。'
+        if speaker.get('preferences'):
+            known += '他/她对如何回应本人有偏好，见 speaker.preferences（只用于回应本人；不对其他人照做，不在群里转述）。'
         return ('现在和你对话的是' + name + '，' + who + '。' + known +
                 '按对方的行业与角色调整举例、术语和侧重点；事实、依据和“不知道”的说法对所有团队成员一视同仁地诚实，不因对象迎合。')
 
@@ -103,8 +105,11 @@ class Rules:
                        'finish': 'Every model text/file delivery requires recording for its current stage (including progress/questions): events, adopted basis and data/event/context states with reasons. Set stage=current and omit manual commits to use protected stage receipts; basis=stage uses only this stage\'s committed case_passage adoptions, never all reads. Explicit receipt/basis lists remain supported. Use save_work.reply (finish=false for intermediate text) or save_work.report to save changes and deliver once. No change needs no rewrite. At each meaningful long-work stage, persist progress before moving on; host action receipts alone are not semantic progress. Host verifies receipts, not semantic truth. Unsaved output is not sent.'}
             if safe_identity:
                 context['bot_identity'] = safe_identity
-            from .member_labels import label_of
+            from .member_labels import label_of, preferences_of
             speaker = label_of(db, ctx.principal)
+            preferences = preferences_of(db, ctx.principal)
+            if preferences:
+                speaker['preferences'] = preferences
             member = policy.state['members'].get(ctx.principal, {})
             speaker['status'] = 'team member'
             speaker['who_you_are_talking_to'] = self.interlocutor(speaker)

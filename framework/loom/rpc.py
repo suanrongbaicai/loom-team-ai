@@ -269,7 +269,7 @@ class RuntimeAPI:
             return collect(self.c, ctx)
         if method == 'set_my_profile':
             from .member_labels import set_own_profile
-            return set_own_profile(self.c, ctx, args.get('call_name'), args.get('about'))
+            return set_own_profile(self.c, ctx, args.get('call_name'), args.get('about'), args.get('preferences'))
         if method == 'set_group_alias':
             from .group_settings import set_alias
             return set_alias(self.c, ctx, args.get('alias'))

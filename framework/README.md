@@ -72,7 +72,7 @@ Windows 部署需要已验证的普通工作账号、其专属工作区、官方
 
 The protected `private_contacts` configuration enables `member_find`, `contact_private`, and `contact_status` for specified apps and verified team members. It reuses app/tenant/person-bound p2p chats; otherwise the official message API obtains the p2p route. Reply ingress belongs to the recipient, with only the necessary task context and authorized basis attached. See `templates/private-contact.md`.
 
-The separate `PrivateContacts/state.sqlite` journal retains batches, exclusions, exact recipients and send receipts; the runtime database remains schema 5. Queued messages are rechecked before sending, and uncertain attempts are never replayed. This adds no scan, timer or capacity. Native capability mappings preserve historical pending requests rather than manufacturing their approvals. Model credentials stay in the existing host.
+The separate `PrivateContacts/state.sqlite` journal retains batches, exclusions, exact recipients and send receipts; it adds nothing to the runtime database schema. Queued messages are rechecked before sending, and uncertain attempts are never replayed. This adds no scan, timer or capacity. Native capability mappings preserve historical pending requests rather than manufacturing their approvals. Model credentials stay in the existing host.
 
 
 原生图片入口由 `image_generation` 管理配置显式启用。已有 Codex 原生图片产物接入、`generated_images` 查询、`send_image` 交付和 `image_status` 核对；宿主确认当前任务与产物，平台上传后发送图片，状态不明不重放。接续历史原图仍须核 bot、租户、资料范围和原图凭据。本地演示不调用真实生图，真实使用需要对应宿主与平台权限，不能把模型一句“已生成”当作图片已经送达。
