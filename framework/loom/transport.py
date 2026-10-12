@@ -126,12 +126,13 @@ class Sender:
             else:
                 receipt = send(app, chat, oid, payload['text'])
         except NotSent as error:
-            if not image:
+            if not image and not attachment:
                 self.c.sent(oid)
                 return {'state':'unknown','retry_allowed':False}
             with self.c.db.transaction() as db:
                 db.execute("UPDATE outbox SET state='delivery_failed' WHERE id=? AND state='sending'", (oid,))
-                self.c.audit(db, 'transport', original_task, 'image.delivery_failed', {'id':oid,'message_submitted':False,'retry_allowed':error.retryable})
+                self.c.audit(db, 'transport', original_task, ('image' if image else 'file') + '.delivery_failed',
+                             {'id':oid,'message_submitted':False,'retry_allowed':error.retryable})
             self.c.flush_task_actions(original_task)
             return {'state':'delivery_failed','retry_allowed':error.retryable}
         except Exception as error:
