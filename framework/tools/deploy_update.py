@@ -74,10 +74,12 @@ def plan(source, framework):
 
 
 def idle_seconds(database):
-    """Seconds since the last audit record and the number of unfinished tasks; read-only."""
+    """Seconds since the last audit record and the amount of work in flight (tasks, executions, replies); read-only."""
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    from loom.database import busy
     with contextlib.closing(sqlite3.connect(Path(database).absolute().as_uri() + '?mode=ro', uri=True, timeout=5)) as db:
         last = db.execute('SELECT MAX(time) FROM audit').fetchone()[0]
-        active = db.execute("SELECT COUNT(*) FROM tasks WHERE state IN ('queued','preparing','running','ingesting')").fetchone()[0]
+        active = sum(busy(db).values())
     if not last:
         return 10 ** 9, active
     from datetime import datetime, timezone
@@ -155,7 +157,7 @@ def apply(source, framework, evidence, services, database=None, min_idle=600, fo
     if database and not force:
         idle, active = idle_seconds(database)
         if active or idle < min_idle:
-            raise Refused('The system was active %d seconds ago (%d unfinished tasks); try later' % (idle, active))
+            raise Refused('The system was active %d seconds ago (%d tasks, executions or replies in flight); try later' % (idle, active))
     new = tree(source)
     live = tree(framework)
     if evidence.exists() and any(evidence.iterdir()):
@@ -174,6 +176,8 @@ def apply(source, framework, evidence, services, database=None, min_idle=600, fo
             with contextlib.closing(sqlite3.connect(Path(database).absolute().as_uri() + '?mode=ro', uri=True, timeout=15)) as src, \
                     contextlib.closing(sqlite3.connect(copy)) as dst:
                 src.backup(dst)
+                if dst.execute('PRAGMA quick_check').fetchone()[0] != 'ok':
+                    raise Refused('Database backup failed its integrity check')
         for rel in found['changed']:
             target = evidence / 'before' / rel
             target.parent.mkdir(parents=True, exist_ok=True)
@@ -181,12 +185,10 @@ def apply(source, framework, evidence, services, database=None, min_idle=600, fo
             if sha(target) != sha(live[rel]):
                 raise Refused('Backup copy differs: ' + rel)
             backed.append(rel)
-        applied = []
         for rel in todo:
             destination = framework / rel
             destination.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(new[rel], destination)
-            applied.append(rel)
             if sha(destination) != sha(new[rel]):
                 raise Refused('Copied file differs from the package: ' + rel)
         for rel in todo:
@@ -253,7 +255,7 @@ def main(argv=None):
     parser.add_argument('--source', required=True)
     parser.add_argument('--framework', required=True)
     parser.add_argument('--evidence')
-    parser.add_argument('--database')
+    parser.add_argument('--database', help='the live runtime.sqlite; required for apply (idle check, backup, rollback downgrade)')
     parser.add_argument('--min-idle', type=int, default=600)
     parser.add_argument('--force', action='store_true')
     parser.add_argument('--service', action='append')
@@ -264,6 +266,8 @@ def main(argv=None):
             return 0
         if not args.evidence:
             raise Refused('--evidence is required')
+        if not args.database or not Path(args.database).is_file():
+            raise Refused('--database must name the live runtime.sqlite: without it there is no idle check, backup or rollback downgrade')
         result = apply(args.source, args.framework, args.evidence, WindowsServices(args.service or DEFAULT_SERVICES),
                        args.database, args.min_idle, args.force)
     except Refused as error:

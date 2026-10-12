@@ -2,7 +2,7 @@
 
 Unlike skills_switch.py nothing is replaced or moved, so the controller keeps running: Skills.deploy copies the skill
 into the Work directory and registers the deployment inside one write transaction, so a task never sees one without the
-other.  The tool refuses to run while any task or execution is active, takes a database backup first, never writes a
+other.  The tool refuses to run while any task, execution or reply send is in flight, takes a database backup first, never writes a
 skill.loaded audit (only a real task's trusted hook does), and on failure removes only what this run created.
 
     python skill_add.py --framework F --control C --evidence E --skill-dir D --key loom-business --version v1 \
@@ -16,9 +16,6 @@ import shutil
 import sqlite3
 import sys
 from contextlib import closing
-
-ACTIVE = "SELECT count(*) FROM tasks WHERE state IN ('queued','running','preparing','ingesting')"
-OPEN_EXECUTIONS = 'SELECT count(*) FROM executions WHERE finished IS NULL'
 
 
 def require(ok, message):
@@ -54,8 +51,8 @@ def facts(db_path, homes, key, version, source):
         db.row_factory = sqlite3.Row
         row = db.execute('SELECT * FROM skills WHERE id=? AND version=?', (key, version)).fetchone()
         deployed = {r['scope']: dict(r) for r in db.execute('SELECT * FROM skill_deployments WHERE skill=?', (key,))}
-        active = db.execute(ACTIVE).fetchone()[0]
-        executions = db.execute(OPEN_EXECUTIONS).fetchone()[0]
+        from loom.database import busy
+        inflight = busy(db)
         loaded = db.execute("SELECT count(*) FROM audit WHERE action='skill.loaded'").fetchone()[0]
         published = db.execute("SELECT count(*) FROM audit WHERE action='skill.published'").fetchone()[0]
     require(row is None or row['digest'] == digest, 'Registered %s %s differs from the source' % (key, version))
@@ -68,7 +65,8 @@ def facts(db_path, homes, key, version, source):
         old = deployed.get(scope)
         require(old is None or (old['version'], old['digest']) == (version, digest), 'Scope %s already deploys another %s' % (scope, key))
         scopes[scope] = {'work': str(work), 'workspace_has_skill': present, 'deployment_row': bool(old)}
-    return {'digest': digest, 'registered': row is not None, 'active_tasks': active, 'open_executions': executions,
+    return {'digest': digest, 'registered': row is not None, 'active_tasks': inflight['tasks'], 'open_executions': inflight['executions'],
+            'sending_replies': inflight['replies'],
             'loaded_audits': loaded, 'published_audits': published, 'scopes': scopes}
 
 
@@ -76,7 +74,7 @@ def add(c, homes, key, version, source, approval, journal_path):
     from loom.skills import Skills, tree_digest
     skills = Skills(c)
     before = facts(c.root / 'runtime.sqlite', homes, key, version, source)
-    require(before['active_tasks'] == before['open_executions'] == 0, 'Active work; do not deploy now')
+    require(before['active_tasks'] == before['open_executions'] == before.get('sending_replies', 0) == 0, 'Active work; do not deploy now')
     journal = {'before': before, 'created_dirs': [], 'created_rows': [], 'published': False}
 
     def save():

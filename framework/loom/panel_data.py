@@ -93,8 +93,8 @@ def members(db, state, config, now=None):
 
 
 def _busy(db):
-    return bool(db.execute("SELECT 1 FROM tasks WHERE state IN ('queued','preparing','running','ingesting') LIMIT 1").fetchone()
-                or db.execute("SELECT 1 FROM outbox WHERE state IN ('queued','sending') LIMIT 1").fetchone())
+    from .database import busy
+    return any(busy(db).values())
 
 
 def change_member(c, member, action, role=None, actor='panel'):

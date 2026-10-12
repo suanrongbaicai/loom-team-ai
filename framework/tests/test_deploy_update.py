@@ -52,6 +52,8 @@ class DeployTests(unittest.TestCase):
         with contextlib.closing(sqlite3.connect(self.db)) as db:
             db.execute('CREATE TABLE audit(time TEXT)')
             db.execute('CREATE TABLE tasks(state TEXT)')
+            db.execute('CREATE TABLE executions(finished TEXT)')
+            db.execute('CREATE TABLE outbox(state TEXT)')
             db.execute('INSERT INTO audit VALUES(?)', ((datetime.now(timezone.utc) - timedelta(hours=2)).isoformat(),))
             db.commit()
 
@@ -90,6 +92,21 @@ class DeployTests(unittest.TestCase):
             db.commit()
         with self.assertRaises(du.Refused):
             du.apply(self.new, self.live, self.evidence, services, self.db)
+
+    def test_a_reply_being_sent_or_an_open_execution_counts_as_busy(self):
+        for table, value in (('outbox', 'sending'), ('executions', None)):
+            with contextlib.closing(sqlite3.connect(self.db)) as db:
+                db.execute('DELETE FROM outbox'); db.execute('DELETE FROM executions')
+                db.execute('INSERT INTO %s VALUES(?)' % table, (value,))
+                db.commit()
+            services = FakeServices()
+            with self.assertRaises(du.Refused):
+                du.apply(self.new, self.live, self.evidence, services, self.db)
+            self.assertEqual(services.events, [])
+
+    def test_apply_without_a_database_is_refused_on_the_command_line(self):
+        self.assertEqual(du.main(['apply', '--source', str(self.new), '--framework', str(self.live), '--evidence', str(self.evidence)]), 2)
+        self.assertEqual((self.live / 'loom' / 'a.py').read_text(), 'VALUE = "old"\n')
 
     def test_a_syntax_error_rolls_everything_back_and_restarts(self):
         (self.new / 'loom' / 'a.py').write_text('def broken(:\n')

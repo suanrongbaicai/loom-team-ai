@@ -10,6 +10,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from loom.control import Control  # noqa: E402
+from loom.database import busy as work_in_flight  # noqa: E402
 
 
 class Busy(RuntimeError):
@@ -17,8 +18,7 @@ class Busy(RuntimeError):
 
 
 def busy(db):
-    return bool(db.execute("SELECT 1 FROM tasks WHERE state IN ('queued','preparing','running','ingesting') LIMIT 1").fetchone()
-                or db.execute("SELECT 1 FROM outbox WHERE state IN ('queued','sending') LIMIT 1").fetchone())
+    return any(work_in_flight(db).values())
 
 
 def switch(c, approval, on=True, apply=False):
