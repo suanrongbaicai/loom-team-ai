@@ -37,6 +37,21 @@ class AttachmentTests(unittest.TestCase):
         self.assertEqual(response['result']['content'][1]['type'], 'image')
         self.assertIn('thumbnail', response['result']['content'][0]['text'])
 
+    def test_frequent_runner_checks_do_not_reread_the_whole_original(self):
+        from unittest.mock import patch
+        source = self.capture()['document']
+
+        def many(account, message, run, guard):
+            for _ in range(20):
+                guard()
+            return {'state': 'read', 'kind': 'image', 'coverage': 'thumbnail',
+                    'sha256': 'synthetic', 'mimeType': 'image/jpeg', 'data': 'eA=='}
+        reader = Attachments(self.c, SimpleNamespace(attachment=many))
+        real, reads = self.c.read, []
+        with patch.object(self.c, 'read', side_effect=lambda *a, **k: reads.append(a[1]) or real(*a, **k)):
+            reader.read(self.ctx, source, 0)
+        self.assertLessEqual(len(reads), 3)      # opening read plus the full checks before and after decoding
+
     def test_video_preview_flag_corrected_without_rewriting_original_cache(self):
         source=self.capture()['document'];calls=[]
         def read(*args):

@@ -29,17 +29,27 @@ class Attachments:
         if frame_times is not None and original['messages'][index].get('type')!='视频':
             raise Denied('指定时间取帧只用于视频原消息。')
         fingerprint = digest(saved['text'].encode())
-        def guard():
+        def guard(full=False):
+            """The runner calls this every half second: check the task, audience and recorded version only. The full
+            read (which also detects bytes changed on disk) runs before starting and again once decoding finishes."""
             if live_guard() is not True:
                 raise Denied('Current task audience unavailable')
-            current = self.c.read(ctx, source)
-            if current['revision'] != saved['revision'] or digest(current['text'].encode()) != fingerprint:
+            if full:
+                current = self.c.read(ctx, source)
+                revision, current_digest = current['revision'], digest(current['text'].encode())
+            else:
+                with self.c.lock, self.c.db.transaction() as db:
+                    policy = self.c._check(db, ctx)
+                    row, resource = self.c._document(db, source)
+                    policy.require_read(ctx, resource)
+                    revision, current_digest = row['revision'], row['digest']
+            if revision != saved['revision'] or current_digest != fingerprint:
                 raise Denied('Original changed during attachment read')
             return True
         if not self.slot.acquire(blocking=False):
             raise Denied('已有附件正在读取，请待其结束后继续。')
         try:
-            guard()
+            guard(full=True)
             key = digest((source + ':' + fingerprint + ':' + str(index)).encode())
             if frame_times is not None:key=digest((key+':video-times:'+json.dumps(frame_times)).encode())
             path = within(self.c.root, 'WeChatAttachmentsV2/' + key + '.json')
@@ -53,7 +63,7 @@ class Attachments:
                 options={'frame_times':frame_times} if frame_times is not None else {}
                 result = self.runner.attachment(original['account'], original['messages'][index],
                                                 uuid.uuid4().hex, guard, **options)
-                guard()
+                guard(full=True)
                 raw_original=result.pop('_original_bytes',None)
                 if raw_original is not None:
                     from .originals import retain
