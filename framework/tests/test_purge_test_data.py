@@ -101,6 +101,15 @@ class PurgeTests(unittest.TestCase):
             purge.apply(self.c, changed, self.root / 'archive', listening=self.never)
         self.assertEqual(len(self.rows('tasks')), 2)
 
+    def test_apply_refuses_while_a_service_holds_its_lock_even_with_the_port_closed(self):
+        from loom.instance import InstanceLock
+        p = purge.plan(self.c, self.seed)
+        purge.archive(p, self.root / 'archive', self.seed)
+        with InstanceLock(self.c.root / '.controller.lock'):
+            with self.assertRaisesRegex(purge.Refused, 'still holds'):
+                purge.apply(self.c, self.seed, self.root / 'archive', listening=self.never)
+        self.assertEqual(len(self.rows('tasks')), 2)
+
     def test_protected_and_unknown_objects_block_the_plan(self):
         bad = json.loads(json.dumps(self.seed))
         bad['tasks'].append(self.real_task.task)

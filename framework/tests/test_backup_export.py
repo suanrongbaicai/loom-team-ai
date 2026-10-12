@@ -140,6 +140,27 @@ class BackupTests(unittest.TestCase):
         victim.write_text('tampered')
         self.assertTrue(be.restore(folder, self.control, apply=True)['problems'])
 
+    def test_a_restore_that_fails_halfway_puts_the_original_files_back(self):
+        folder = Path(be.export(self.control, self.usb)['folder'])
+        (self.control / 'personnel.md').write_text('changed since the backup')
+        current = {p: p.read_bytes() for p in self.loom.rglob('*') if p.is_file()}
+        calls = []
+        original = shutil.copy2
+
+        def flaky(src, dst, *args, **kwargs):
+            calls.append(dst)
+            if len(calls) == 2:
+                raise OSError('disk unplugged')
+            return original(src, dst, *args, **kwargs)
+        be.shutil.copy2 = flaky
+        try:
+            with self.assertRaises(OSError):
+                be.restore(folder, self.control, apply=True)
+        finally:
+            be.shutil.copy2 = original
+        for path, data in current.items():
+            self.assertEqual(path.read_bytes(), data, path)
+
     def test_scan_filters_the_data_and_system_drives_and_reads_one_or_many(self):
         os.environ['SystemDrive'] = 'C:'
         rows = [{'letter': 'C:', 'label': 'sys', 'fs': 'NTFS', 'free': 5, 'total': 10, 'model': 'x'},

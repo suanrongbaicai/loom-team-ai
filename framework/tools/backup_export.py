@@ -346,26 +346,37 @@ def restore(folder, control, apply=False, gate=None):
         if not inside(loom_root, target) or node_problem(target, loom_root):
             raise Refused('Restore target is a link or outside the data folder: ' + entry['path'])
     stash = loom_root / ('.pre-restore-' + time.strftime('%Y%m%d%H%M%S'))
-    moved = 0
-    for entry in manifest['files']:
-        target = loom_root / entry['path']
-        if target.exists():
-            keep = stash / entry['path']
-            keep.parent.mkdir(parents=True, exist_ok=True)
-            os.replace(target, keep)
-            moved += 1
-    for suffix in ('-wal', '-shm'):
+    moved, copied = [], []                    # (original, kept) pairs and restored targets, so a failure can be undone
+    try:
         for entry in manifest['files']:
-            if entry['kind'] == 'database':
-                with contextlib.suppress(FileNotFoundError):
-                    os.replace(str(loom_root / entry['path']) + suffix, str(stash / entry['path']) + suffix)
-    for entry in manifest['files']:
-        target = loom_root / entry['path']
-        target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(Path(folder) / 'data' / entry['path'], target)
-        if sha_file(target) != entry['sha256']:
-            raise Refused('A restored file does not match the backup: ' + entry['path'])
-    plan.update(restored=len(manifest['files']), moved_aside=moved, stash=str(stash))
+            target = loom_root / entry['path']
+            if target.exists():
+                keep = stash / entry['path']
+                keep.parent.mkdir(parents=True, exist_ok=True)
+                os.replace(target, keep)
+                moved.append((target, keep))
+        for suffix in ('-wal', '-shm'):
+            for entry in manifest['files']:
+                if entry['kind'] == 'database':
+                    side, keep = Path(str(loom_root / entry['path']) + suffix), Path(str(stash / entry['path']) + suffix)
+                    with contextlib.suppress(FileNotFoundError):
+                        os.replace(side, keep)
+                        moved.append((side, keep))
+        for entry in manifest['files']:
+            target = loom_root / entry['path']
+            target.parent.mkdir(parents=True, exist_ok=True)
+            copied.append(target)
+            shutil.copy2(Path(folder) / 'data' / entry['path'], target)
+            if sha_file(target) != entry['sha256']:
+                raise Refused('A restored file does not match the backup: ' + entry['path'])
+    except BaseException:
+        for target in copied:
+            with contextlib.suppress(FileNotFoundError):
+                target.unlink()
+        for original, keep in reversed(moved):
+            os.replace(keep, original)
+        raise
+    plan.update(restored=len(manifest['files']), moved_aside=len(moved), stash=str(stash))
     return plan
 
 
