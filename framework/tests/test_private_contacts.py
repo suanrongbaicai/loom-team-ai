@@ -90,6 +90,16 @@ class ContactTests(unittest.TestCase):
         self.assertEqual(receipt['state'],'sent'); self.assertFalse(receipt['read_or_replied'])
         self.assertTrue(self.client.calls[0][0].endswith('receive_id_type=chat_id'))
         self.assertEqual(self.contacts.status(self.ctx,'one')['results'][0]['replies'],0)
+    def test_a_routing_failure_after_delivery_keeps_the_real_receipt(self):
+        self.contact('carol'); a=self.action()
+        with patch.object(type(self.contacts),'attach_chat',side_effect=RuntimeError('chat conflict')):
+            receipt=self.sender.send_one(a['outbox'])
+        self.assertEqual(receipt['state'],'sent')
+        with self.c.db.transaction() as db:
+            out=db.execute('SELECT state,receipt FROM outbox WHERE id=?',(a['outbox'],)).fetchone()
+            self.assertEqual(out['state'],'sent'); self.assertTrue(out['receipt'])
+            self.assertTrue(db.execute("SELECT 1 FROM audit WHERE action='private_contact.route_held'").fetchone())
+        self.assertEqual(self.action()['state'],'sent')
     def test_new_private_receives_reply_as_recipient_and_carries_only_contact_context(self):
         self.contact('carol'); a=self.action()
         self.sender.send_one(a['outbox'])

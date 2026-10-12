@@ -377,7 +377,6 @@ class PrivateContacts:
                 db.execute("UPDATE actions SET state='sending' WHERE id=?", (a['id'],))
         try:
             receipt = send(payload['text'])
-            self.attach_chat(app, tenant, a['member'], a['account'], receipt['chat_id'])
         except Exception as error:
             from .membership import MessageRejected
             if isinstance(error, MessageRejected):
@@ -397,6 +396,12 @@ class PrivateContacts:
         self.c.sent(oid, receipt['message_id'])
         with self.db() as db:
             db.execute("UPDATE actions SET state='sent' WHERE id=?", (a['id'],))
+        try:
+            # Routing for the recipient's later replies; a failure here does not change the delivered message.
+            self.attach_chat(app, tenant, a['member'], a['account'], receipt['chat_id'])
+        except Exception as error:
+            with self.c.db.transaction() as db:
+                self.c.audit(db, 'transport', None, 'private_contact.route_held', {'outbox': oid, 'error_type': type(error).__name__})
         return {'state': 'sent', 'outbox': oid, 'receipt': receipt['message_id'], 'read_or_replied': False}
 
     def status(self, ctx, id):
