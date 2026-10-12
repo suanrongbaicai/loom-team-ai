@@ -5,7 +5,7 @@ version given with --skill-dir is published first (never twice). For each physic
 staged beside the live one; the directory swap and the deployment rows of every scope sharing that directory are then
 committed inside one write transaction. Rules delivery opens a write transaction as well, so a starting task sees either
 the old directory and rows or the new ones. The replaced directory is kept under .agents/skills-retired, in-flight tasks
-keep their pinned version, nothing writes skill.loaded (only a real task's trusted hook does), and on failure every
+keep their pinned version, it refuses while any task, execution or reply send is in flight, nothing writes skill.loaded (only a real task's trusted hook does), and on failure every
 directory and row this run changed is put back.
 
     python skill_upgrade.py --framework F --control C --evidence E --key loom-work-records --to v11-knowledge-kinds \
@@ -20,9 +20,6 @@ import sqlite3
 import sys
 from contextlib import closing
 import datetime
-
-ACTIVE = "SELECT count(*) FROM tasks WHERE state IN ('queued','running','preparing','ingesting')"
-OPEN_EXECUTIONS = 'SELECT count(*) FROM executions WHERE finished IS NULL'
 
 
 def require(ok, message):
@@ -72,8 +69,8 @@ def facts(db_path, homes, key, version, source=None, others=None):
         row = db.execute('SELECT * FROM skills WHERE id=? AND version=?', (key, version)).fetchone()
         row = dict(row) if row else None
         deployed = {r['scope']: dict(r) for r in db.execute('SELECT * FROM skill_deployments WHERE skill=?', (key,))}
-        active = db.execute(ACTIVE).fetchone()[0]
-        executions = db.execute(OPEN_EXECUTIONS).fetchone()[0]
+        from loom.database import busy
+        inflight = busy(db)
         loaded = db.execute("SELECT count(*) FROM audit WHERE action='skill.loaded'").fetchone()[0]
         published = db.execute("SELECT count(*) FROM audit WHERE action='skill.published'").fetchone()[0]
     if source is not None:
@@ -98,7 +95,8 @@ def facts(db_path, homes, key, version, source=None, others=None):
     for group in groups_of(homes).values():
         done = {scopes[s]['already'] for s in group['scopes']}
         require(len(done) == 1, 'Scopes %s share a Work directory but are at different versions' % group['scopes'])
-    return {'digest': digest, 'registered': row is not None, 'active_tasks': active, 'open_executions': executions,
+    return {'digest': digest, 'registered': row is not None, 'active_tasks': inflight['tasks'], 'open_executions': inflight['executions'],
+            'sending_replies': inflight['replies'],
             'loaded_audits': loaded, 'published_audits': published, 'scopes': scopes}
 
 
@@ -123,7 +121,8 @@ def _swap(c, group, key, version, path, digest, before, stamp):
     moved = False
     try:
         with c.lock, c.db.transaction() as db:
-            require(db.execute(ACTIVE).fetchone()[0] == 0 and db.execute(OPEN_EXECUTIONS).fetchone()[0] == 0, 'Work arrived; do not switch')
+            from loom.database import busy
+            require(not any(busy(db).values()), 'Work arrived; do not switch')
             for scope in group['scopes']:
                 row = db.execute('SELECT version,digest FROM skill_deployments WHERE scope=? AND skill=?', (scope, key)).fetchone()
                 require(row and (row['version'], row['digest']) == (before['scopes'][scope]['from_version'], before['scopes'][scope]['from_digest']),
@@ -164,7 +163,7 @@ def upgrade(c, homes, key, version, source, approval, journal_path, stamp, other
     from loom.skills import Skills, tree_digest
     db_path = c.root / 'runtime.sqlite'
     before = facts(db_path, homes, key, version, source, others)
-    require(before['active_tasks'] == before['open_executions'] == 0, 'Active work; do not switch now')
+    require(before['active_tasks'] == before['open_executions'] == before['sending_replies'] == 0, 'Active work; do not switch now')
     journal = {'before': before, 'published': False, 'groups': {}, 'stage': 'prechecked'}
 
     def save():

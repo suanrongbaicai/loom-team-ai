@@ -85,6 +85,19 @@ DOWN = {
 }
 
 
+BUSY = {
+    'tasks': "SELECT COUNT(*) FROM tasks WHERE state IN ('queued','preparing','running','ingesting')",
+    'executions': 'SELECT COUNT(*) FROM executions WHERE finished IS NULL',
+    'replies': "SELECT COUNT(*) FROM outbox WHERE state IN ('queued','sending')",
+}
+
+
+def busy(db):
+    """What must finish before an administrator stops services, switches methods or changes the roster: unfinished
+    tasks, model executions that have not ended, and replies queued or being sent."""
+    return {name: db.execute(sql).fetchone()[0] for name, sql in BUSY.items()}
+
+
 def downgrade(path, to_version, down=None):
     """Undo migrations until `to_version`; the caller has already saved a full copy of the database."""
     down = DOWN if down is None else down
