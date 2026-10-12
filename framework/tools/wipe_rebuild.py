@@ -28,6 +28,7 @@ sys.path.insert(0, str(TOOLS.parent))
 from loom.database import LATEST, SCHEMA, Database  # noqa: E402
 from loom.instance import InstanceBusy, InstanceLock  # noqa: E402
 from loom.policy import Policy  # noqa: E402
+from loom.fsguard import chain_link, is_link, sha_file as file_sha  # noqa: E402
 
 DB_NAMES = ('runtime.sqlite', 'runtime.sqlite-wal', 'runtime.sqlite-shm')
 KEEP_TABLES = ('policy', 'skills', 'skill_deployments')
@@ -47,35 +48,6 @@ class Refused(RuntimeError):
 
 def sha(data):
     return hashlib.sha256(data).hexdigest()
-
-
-def file_sha(path):
-    h = hashlib.sha256()
-    with open(path, 'rb') as stream:
-        for block in iter(lambda: stream.read(1 << 20), b''):
-            h.update(block)
-    return h.hexdigest()
-
-
-def is_link(path):
-    path = Path(path)
-    if path.is_symlink() or (hasattr(path, 'is_junction') and path.is_junction()):
-        return True
-    try:
-        return bool(getattr(os.lstat(path), 'st_file_attributes', 0) & 0x400)
-    except OSError:
-        return False
-
-
-def chain_link(path):
-    """First link/junction/reparse point anywhere on the absolute path as written."""
-    path = Path(os.path.abspath(path))
-    current = Path(path.anchor)
-    for part in path.relative_to(path.anchor).parts:
-        current = current / part
-        if (current.exists() or current.is_symlink()) and is_link(current):
-            return str(current)
-    return None
 
 
 def inside(parent, path):

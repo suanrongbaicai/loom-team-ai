@@ -16,30 +16,11 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from loom.control import Control, identifier  # noqa: E402
 from loom.skills import Skills, tree_digest  # noqa: E402
+from loom.fsguard import chain_link, is_link  # noqa: E402
 
 
 class Refused(RuntimeError):
     pass
-
-
-def is_link(path):
-    path = Path(path)
-    if path.is_symlink() or (hasattr(path, 'is_junction') and path.is_junction()):
-        return True
-    try:
-        return bool(getattr(os.lstat(path), 'st_file_attributes', 0) & 0x400)
-    except OSError:
-        return False
-
-
-def chain_link(path):
-    path = Path(os.path.abspath(path))
-    current = Path(path.anchor)
-    for part in path.relative_to(path.anchor).parts:
-        current = current / part
-        if (current.exists() or current.is_symlink()) and is_link(current):
-            return str(current)
-    return None
 
 
 def inside(parent, path):
