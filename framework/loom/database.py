@@ -52,6 +52,7 @@ CREATE TABLE IF NOT EXISTS member_settings(member TEXT PRIMARY KEY,model TEXT,re
 CREATE TABLE IF NOT EXISTS usage_log(task TEXT PRIMARY KEY,scope TEXT,actor TEXT,kind TEXT,model TEXT,effort TEXT,input_tokens INTEGER,cached_tokens INTEGER,output_tokens INTEGER,reasoning_tokens INTEGER,tool_calls INTEGER,started TEXT,finished TEXT,recorded TEXT);
 CREATE INDEX IF NOT EXISTS usage_log_finished ON usage_log(finished);
 CREATE TABLE IF NOT EXISTS quota_snapshots(id INTEGER PRIMARY KEY AUTOINCREMENT,account TEXT,scope TEXT,task TEXT,window_minutes INTEGER,used_percent REAL,resets_at INTEGER,has_credits INTEGER,observed TEXT,observed_source TEXT,recorded TEXT);
+CREATE TABLE IF NOT EXISTS member_preferences(member TEXT PRIMARY KEY,text TEXT NOT NULL,updated TEXT NOT NULL);
 '''
 
 
@@ -59,6 +60,7 @@ CREATE TABLE IF NOT EXISTS quota_snapshots(id INTEGER PRIMARY KEY AUTOINCREMENT,
 # MIGRATIONS[n] = 'SQL turning version n into n+1' (n starts at 1).  An existing database is copied to
 # '<name>.pre-v<n>' and migrated in one transaction at open; a failure leaves the original untouched.
 MIGRATIONS = {
+    5: 'CREATE TABLE IF NOT EXISTS member_preferences(member TEXT PRIMARY KEY,text TEXT NOT NULL,updated TEXT NOT NULL)',
     4: ('CREATE TABLE IF NOT EXISTS usage_log(task TEXT PRIMARY KEY,scope TEXT,actor TEXT,kind TEXT,model TEXT,effort TEXT,input_tokens INTEGER,cached_tokens INTEGER,'
         'output_tokens INTEGER,reasoning_tokens INTEGER,tool_calls INTEGER,started TEXT,finished TEXT,recorded TEXT);'
         'CREATE INDEX IF NOT EXISTS usage_log_finished ON usage_log(finished);'
@@ -72,6 +74,7 @@ LATEST = 1 + len(MIGRATIONS)
 # DOWN[n] undoes MIGRATIONS[n] (version n+1 -> n) so a deployment that fails after the migration can put the OLD code back
 # together with a database it accepts.  Each step must lose only what the migration itself introduced.
 DOWN = {
+    5: 'DROP TABLE IF EXISTS member_preferences',
     4: 'DROP TABLE IF EXISTS quota_snapshots;DROP TABLE IF EXISTS usage_log',
     3: 'DROP TABLE IF EXISTS member_settings',
     2: 'DROP TABLE IF EXISTS member_labels',

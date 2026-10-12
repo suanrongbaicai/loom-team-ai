@@ -146,3 +146,28 @@ class UsageTablesMigrationTests(unittest.TestCase):
                 for table in ('usage_log', 'quota_snapshots'):
                     self.assertIsNone(db.execute("SELECT 1 FROM sqlite_master WHERE name=?", (table,)).fetchone())
                 self.assertIsNotNone(db.execute("SELECT 1 FROM sqlite_master WHERE name='member_settings'").fetchone())
+
+
+class MemberPreferencesMigrationTests(unittest.TestCase):
+    def test_a_version_5_database_gains_member_preferences_and_can_be_downgraded_again(self):
+        import contextlib
+        import sqlite3
+        import tempfile
+        from pathlib import Path
+        from loom.database import Database, LATEST, downgrade
+        with tempfile.TemporaryDirectory() as root:
+            path = Path(root) / 'runtime.sqlite'
+            Database(path)
+            with contextlib.closing(sqlite3.connect(path, isolation_level=None)) as db:
+                db.execute('DROP TABLE member_preferences')
+                db.execute("INSERT INTO member_labels(member,about) VALUES('alice','做设计')")
+                db.execute('PRAGMA user_version=5')
+            Database(path)
+            with contextlib.closing(sqlite3.connect(path)) as db:
+                self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0], LATEST)
+                self.assertEqual(db.execute('SELECT COUNT(*) FROM member_preferences').fetchone()[0], 0)
+            self.assertTrue(Path(str(path) + '.pre-v5').exists())
+            self.assertEqual(downgrade(path, 5), 5)
+            with contextlib.closing(sqlite3.connect(path)) as db:
+                self.assertIsNone(db.execute("SELECT 1 FROM sqlite_master WHERE name='member_preferences'").fetchone())
+                self.assertEqual(db.execute("SELECT about FROM member_labels WHERE member='alice'").fetchone()[0], '做设计')

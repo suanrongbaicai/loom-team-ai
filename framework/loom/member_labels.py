@@ -3,7 +3,7 @@ decides permissions; a label (the platform's display name, or what the person as
 is only for speaking to them.  Nothing here grants anything."""
 from .policy import Denied, utcnow
 
-MAX_NAME, MAX_ABOUT = 24, 300
+MAX_NAME, MAX_ABOUT, MAX_PREFERENCES = 24, 300, 500
 
 
 def _clean(text, limit):
@@ -21,19 +21,39 @@ def set_platform_name(db, member, name, source='feishu'):
                (member, name, source, utcnow()))
 
 
-def set_own_profile(c, ctx, call_name=None, about=None):
-    """A person tells the assistant how to call them and what they do.  Only about themselves (the speaker of this task)."""
+def set_own_profile(c, ctx, call_name=None, about=None, preferences=None):
+    """A person tells the assistant how to call them, what they do, and how they want to be answered.  Only about themselves
+    (the speaker of this task).  preferences is the complete new text; an empty string clears it."""
     call_name, about = _clean(call_name, MAX_NAME), _clean(about, MAX_ABOUT)
-    if not (call_name or about):
-        raise ValueError('需要称呼或自我介绍至少一项')
+    clear = isinstance(preferences, str) and not preferences.strip()
+    if preferences is not None and not isinstance(preferences, str):
+        raise ValueError('preferences must be text')
+    if preferences is not None and len(' '.join(preferences.split())) > MAX_PREFERENCES:
+        raise ValueError('偏好最多%d字；请合并成完整的一段再保存' % MAX_PREFERENCES)
+    preferences = None if clear else _clean(preferences, MAX_PREFERENCES)
+    if not (call_name or about or preferences or clear):
+        raise ValueError('需要称呼、自我介绍或偏好至少一项')
     with c.lock, c.db.transaction() as db:
         c._check(db, ctx)
-        db.execute('INSERT INTO member_labels(member,call_name,about,updated) VALUES(?,?,?,?) '
-                   'ON CONFLICT(member) DO UPDATE SET call_name=COALESCE(excluded.call_name,call_name),'
-                   'about=COALESCE(excluded.about,about),updated=excluded.updated',
-                   (ctx.principal, call_name, about, utcnow()))
-        c.audit(db, ctx.principal, ctx.task, 'member.profile.set', {'call_name': bool(call_name), 'about': bool(about)})
-    return {'saved': True, 'meaning': '已记住。以后我会这样称呼你，并记得你做什么。'}
+        if call_name or about:
+            db.execute('INSERT INTO member_labels(member,call_name,about,updated) VALUES(?,?,?,?) '
+                       'ON CONFLICT(member) DO UPDATE SET call_name=COALESCE(excluded.call_name,call_name),'
+                       'about=COALESCE(excluded.about,about),updated=excluded.updated',
+                       (ctx.principal, call_name, about, utcnow()))
+        if clear:
+            db.execute('DELETE FROM member_preferences WHERE member=?', (ctx.principal,))
+        elif preferences:
+            db.execute('INSERT INTO member_preferences(member,text,updated) VALUES(?,?,?) '
+                       'ON CONFLICT(member) DO UPDATE SET text=excluded.text,updated=excluded.updated',
+                       (ctx.principal, preferences, utcnow()))
+        c.audit(db, ctx.principal, ctx.task, 'member.profile.set',
+                {'call_name': bool(call_name), 'about': bool(about), 'preferences': 'cleared' if clear else bool(preferences)})
+    return {'saved': True, 'meaning': '已记住。以后我会这样称呼你，记得你做什么，并在回应你本人时按你的偏好来。'}
+
+
+def preferences_of(db, member):
+    row = db.execute('SELECT text FROM member_preferences WHERE member=?', (member,)).fetchone()
+    return row[0] if row else None
 
 
 def label_of(db, member):
