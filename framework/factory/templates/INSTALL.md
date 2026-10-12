@@ -28,7 +28,7 @@
 
 ## 升级（只换代码，不带数据进出）
 
-替换框架目录中的 `loom/`、`rules/`、`tools/`。已部署技能换版本用 `tools/skill_upgrade.py`：按 `--scopes` 逐个范围切换，可先试一个范围再扩大，切回旧版同样用它；新增技能用 `tools/skill_add.py`（版本发布不可变，旧版保留）。升级前备份；升级不改数据库、scope 记录和配置。数据库结构变化须有显式兼容迁移，旧程序遇到新结构会停止。`deploy_update.py` 升级失败时会自动备份并降级数据库；升级成功后又要退回旧代码时，先停服务、备份 `runtime.sqlite`，用**新代码**执行 `python -c "import sys; sys.path.insert(0, '<framework>'); from loom.database import downgrade; downgrade(r'<control>/runtime.sqlite', <旧版本号>)"`，再换回旧代码。例如从 6 退到 5 只删除 `member_preferences`（期间保存的个人偏好随之丢失），其他记录不变。
+替换框架目录中的 `loom/`、`rules/`、`tools/`。已部署技能换版本用 `tools/skill_upgrade.py`：按 `--scopes` 逐个范围切换，可先试一个范围再扩大，切回旧版同样用它；新增技能用 `tools/skill_add.py`（版本发布不可变，旧版保留）。升级前备份；升级不改数据库、scope 记录和配置。数据库结构变化须有显式兼容迁移，旧程序遇到新结构会停止。`deploy_update.py` 升级失败时会自动备份并降级数据库；升级成功后又要退回旧代码时，先停服务、备份 `runtime.sqlite`，用**新代码**执行 `python -c "import sys; sys.path.insert(0, '<framework>'); from loom.database import downgrade; downgrade(r'<control>/runtime.sqlite', <旧版本号>)"`，再换回旧代码。例如从 7 退到 6 只删除 `share_requests`（已写入群的共享结论作为普通资料保留），从 6 退到 5 只删除 `member_preferences`（期间保存的个人偏好随之丢失），其他记录不变。
 
 ## 复位
 

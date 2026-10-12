@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS usage_log(task TEXT PRIMARY KEY,scope TEXT,actor TEXT
 CREATE INDEX IF NOT EXISTS usage_log_finished ON usage_log(finished);
 CREATE TABLE IF NOT EXISTS quota_snapshots(id INTEGER PRIMARY KEY AUTOINCREMENT,account TEXT,scope TEXT,task TEXT,window_minutes INTEGER,used_percent REAL,resets_at INTEGER,has_credits INTEGER,observed TEXT,observed_source TEXT,recorded TEXT);
 CREATE TABLE IF NOT EXISTS member_preferences(member TEXT PRIMARY KEY,text TEXT NOT NULL,updated TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS share_requests(id TEXT PRIMARY KEY,actor TEXT NOT NULL,scope TEXT NOT NULL,body TEXT NOT NULL,state TEXT NOT NULL,created TEXT NOT NULL,approval TEXT);
 '''
 
 
@@ -60,6 +61,7 @@ CREATE TABLE IF NOT EXISTS member_preferences(member TEXT PRIMARY KEY,text TEXT 
 # MIGRATIONS[n] = 'SQL turning version n into n+1' (n starts at 1).  An existing database is copied to
 # '<name>.pre-v<n>' and migrated in one transaction at open; a failure leaves the original untouched.
 MIGRATIONS = {
+    6: 'CREATE TABLE IF NOT EXISTS share_requests(id TEXT PRIMARY KEY,actor TEXT NOT NULL,scope TEXT NOT NULL,body TEXT NOT NULL,state TEXT NOT NULL,created TEXT NOT NULL,approval TEXT)',
     5: 'CREATE TABLE IF NOT EXISTS member_preferences(member TEXT PRIMARY KEY,text TEXT NOT NULL,updated TEXT NOT NULL)',
     4: ('CREATE TABLE IF NOT EXISTS usage_log(task TEXT PRIMARY KEY,scope TEXT,actor TEXT,kind TEXT,model TEXT,effort TEXT,input_tokens INTEGER,cached_tokens INTEGER,'
         'output_tokens INTEGER,reasoning_tokens INTEGER,tool_calls INTEGER,started TEXT,finished TEXT,recorded TEXT);'
@@ -74,6 +76,7 @@ LATEST = 1 + len(MIGRATIONS)
 # DOWN[n] undoes MIGRATIONS[n] (version n+1 -> n) so a deployment that fails after the migration can put the OLD code back
 # together with a database it accepts.  Each step must lose only what the migration itself introduced.
 DOWN = {
+    6: 'DROP TABLE IF EXISTS share_requests',
     5: 'DROP TABLE IF EXISTS member_preferences',
     4: 'DROP TABLE IF EXISTS quota_snapshots;DROP TABLE IF EXISTS usage_log',
     3: 'DROP TABLE IF EXISTS member_settings',
