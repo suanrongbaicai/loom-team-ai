@@ -123,13 +123,35 @@ class MaintenanceTests(unittest.TestCase):
             err = control.parent / 'Gateway' / 'gateway.err'
             err.parent.mkdir()
             err.write_bytes(b'x' * (maintenance.LOG_LIMIT + 1))
-            old = control / 'b.20200101.out.old'
+            old = control / 'b.out.20200101000000.old'
             old.write_text('x')
             os.utime(old, (1, 1))
             result = maintenance.rotate_logs(control)
             self.assertEqual(sorted(result['rotated']), sorted([str(big), str(err)]))
             self.assertFalse(big.exists())
             self.assertEqual(result['deleted'], [str(old)])
+
+    def test_team_material_is_never_rotated_or_deleted(self):
+        with tempfile.TemporaryDirectory() as root:
+            control = make(root)
+            scope_root = Path(root) / 'LOOM' / 'Workers' / 'scope-a'
+            inside = control / 'Data' / 'originals' / 'server.log'
+            inside.parent.mkdir(parents=True)
+            team = [scope_root / 'export.log', inside, control / 'Artifacts' / 'rep1' / 'trace.out']
+            for path in team:
+                path.write_bytes(b'x' * (maintenance.LOG_LIMIT + 1))
+            kept = [scope_root / 'notes.20200101000000.old', control / 'draft.old', control / 'Data' / 'x.20200101000000.old']
+            for path in kept:
+                path.write_text('x')
+                os.utime(path, (1, 1))
+            with contextlib.closing(sqlite3.connect(control / 'runtime.sqlite')) as db:
+                db.execute('update policy set body=?', ('{"scopes": {"a": {"root": %s}, "b": {"root": %s}}}' % (
+                    __import__('json').dumps(str(scope_root)), __import__('json').dumps(str(control / 'Data'))),))
+                db.commit()
+            result = maintenance.rotate_logs(control)
+            self.assertEqual((result['rotated'], result['deleted']), ([], []))
+            for path in team + kept:
+                self.assertTrue(path.exists(), path)
 
     def test_health_flags_missing_backup_and_damage(self):
         with tempfile.TemporaryDirectory() as root:

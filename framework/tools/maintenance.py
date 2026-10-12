@@ -8,6 +8,7 @@ import argparse
 import contextlib
 import json
 from pathlib import Path
+import re
 import shutil
 import sqlite3
 import sys
@@ -99,11 +100,28 @@ def prune_backups(control, now=None):
     return removed
 
 
+ROTATED = re.compile(r'.+\.\d{14}\.old')
+NOT_LOGS = ('Data', 'Artifacts')
+
+
+def log_candidates(control, base, pattern):
+    """Service logs only: team material under any scope root, Data or Artifacts is never renamed or deleted."""
+    protected = [Path(r).resolve() for r in policy_roots(control)]
+    for path in sorted(base.rglob(pattern)):
+        resolved = path.resolve()
+        if any(resolved.is_relative_to(root) for root in protected):
+            continue
+        if any(part in NOT_LOGS for part in path.relative_to(base).parts[:-1]):
+            continue
+        if path.is_file():
+            yield path
+
+
 def rotate_logs(control, now=None):
     now = now or time.time()
     rotated, deleted, locked = [], [], []
     for base in [Path(control)] + sorted(Path(control).parent.glob('Gateway*')):
-        for log in sorted(p for p in base.rglob('*') if p.suffix in LOG_SUFFIXES and p.is_file()):
+        for log in (p for p in log_candidates(control, base, '*') if p.suffix in LOG_SUFFIXES):
             try:
                 if log.stat().st_size <= LOG_LIMIT:
                     continue
@@ -117,7 +135,9 @@ def rotate_logs(control, now=None):
                 rotated.append(str(log))
             except OSError:
                 locked.append(str(log))
-        for old in base.rglob('*.old'):
+        for old in log_candidates(control, base, '*.old'):
+            if not ROTATED.fullmatch(old.name):
+                continue
             with contextlib.suppress(OSError):
                 if now - old.stat().st_mtime > LOG_KEEP_DAYS * 86400:
                     old.unlink()
