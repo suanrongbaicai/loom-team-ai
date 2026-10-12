@@ -7,6 +7,17 @@ from .policy import Context, Denied, utcnow
 def accepted_text(c, received):
     if not received.get('triggered'):
         return None, None
+    cache = getattr(c, 'accepted_cache', None)
+    if cache is not None and received['task'] in cache:
+        text, original = cache[received['task']]
+        return text, (json.loads(json.dumps(original)) if original is not None else None)
+    text, original = _accepted_text(c, received)
+    if cache is not None:
+        cache[received['task']] = (text, json.loads(json.dumps(original)) if original is not None else None)
+    return text, original
+
+
+def _accepted_text(c, received):
     with c.db.transaction() as db:
         row = db.execute('SELECT d.* FROM tasks t JOIN messages m ON m.id=t.event '
                          'JOIN documents d ON d.id=m.resource WHERE t.id=?', (received['task'],)).fetchone()

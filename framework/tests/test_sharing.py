@@ -121,6 +121,20 @@ class SharingTests(unittest.TestCase):
         with self.assertRaises(Denied):
             self.sharing.request(group, 'six', 'mixed', CONCLUSION, ['note'])
 
+    def test_one_incoming_message_is_read_once_by_all_control_handlers(self):
+        from unittest.mock import patch
+        from loom import human_messages
+        self.show()
+        real, calls = human_messages._accepted_text, []
+
+        def counted(c, received):
+            calls.append(received['task'])
+            return real(c, received)
+        with patch.object(human_messages, '_accepted_text', counted):
+            self.reply(number='plain-text', text='同意', parent='unknown')    # passes through every handler unmatched
+        self.assertEqual(len(calls), 1)
+        self.assertIsNone(getattr(self.c, 'accepted_cache', None))
+
     def test_the_same_request_id_cannot_change_its_content(self):
         self.show()
         with self.assertRaises(Denied):
