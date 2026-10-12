@@ -68,6 +68,8 @@ Windows 部署需要已验证的普通工作账号、其专属工作区、官方
 检索由模型决定问题含义、对象对应和采用范围。`search` 支持多词同时命中、多种说法任一命中，返回版本及准确原文片段；`read/read_many` 可按字符范围继续读，逐次引用仅接受实际返回范围。`case_catalog/objects/search` 分页需延用 snapshot，当前可读资料变化后重新查。索引为进程内可重建的 SQLite FTS5，48MiB 为规范化文字加词项的输入预算（不是总进程内存上限）；大文件、容量不足或索引故障直接搜索已核验原件，不遗漏、不开额外服务、不修改持久数据库结构。每次仍验证当前获准原件，主要收益是少返回无关全文和减少往返，不声称模型语义或端到端耗时已经验证。
 
 模型可在正式 Context 的 `record.lookup` 中保存有实际已读依据的名称、别名、类型及相关编号。它与正文同版本保存，Obsidian aliases 可直接显示；旧资料不强制改写。`objects` 只返回当前可读的明确登记项，同名多项不自动合并，关联不等于同一。登记项可带可选的 `recheck_after`（YYYY-MM-DD，不可早于当天）；当前版本到期后 `read` 与 `objects` 附 `recheck.due=true` 提示先核来源，只比较日期，不判断内容也不拦截。更改日期等同修改登记信息，须附本任务实际读取的依据；只改正文时保留原日期。业务名称对应不授予平台身份或资料权限；旧版本保留当时内容。正式身份、披露、动作留存和回复前保存沿用原机制。
+单条共享：`share_conclusion` 只能在本人私聊里提出，目标限本人所在的已登记群（可选 scope 配置 `name` 用于确认消息显示）。宿主冻结结论文字、群成员和依据版本，依据须为本任务已读、且属于本人该私聊或群内全员可读的资料；确认消息保存后排队，本轮结束。本人以平台身份回复“同意”（或在该私聊最新消息就是待确认视图时直接回复）后，宿主以本人身份在群范围写入一份 Context，内容为结论及来源说明，不含私聊原文和依据编号；群成员已变化、请求已取消或回复不是本人时不写入。请求记录在 `share_requests`（数据库第 7 版）。
+
 # Task-bound private contact
 
 The protected `private_contacts` configuration enables `member_find`, `contact_private`, and `contact_status` for specified apps and verified team members. It reuses app/tenant/person-bound p2p chats; otherwise the official message API obtains the p2p route. Reply ingress belongs to the recipient, with only the necessary task context and authorized basis attached. See `templates/private-contact.md`.

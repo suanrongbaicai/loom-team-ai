@@ -102,6 +102,11 @@ class RuntimeAPI:
             if consent:
                 result['wechat_consent'] = consent
                 return result
+            from .sharing import handle as share_consent
+            shared = share_consent(self.c, envelope, result)
+            if shared:
+                result['share_consent'] = shared
+                return result
             decision = human_decision(self.c, envelope, result)
             if decision:
                 result['human_decision'] = decision
@@ -267,6 +272,12 @@ class RuntimeAPI:
         if method == 'new_messages':
             from .supplements import collect
             return collect(self.c, ctx)
+        if method == 'share_conclusion':
+            from .sharing import Sharing
+            if args.get('destination') is None:
+                return {'targets': Sharing(self.c).targets(ctx),
+                        'meaning': '你本人所在、可共享到的群；再带上 destination、text 和 sources 提出共享。'}
+            return Sharing(self.c).request(ctx, args['id'], args['destination'], args['text'], args['sources'])
         if method == 'set_my_profile':
             from .member_labels import set_own_profile
             return set_own_profile(self.c, ctx, args.get('call_name'), args.get('about'), args.get('preferences'))

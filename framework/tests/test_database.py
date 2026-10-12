@@ -148,6 +148,29 @@ class UsageTablesMigrationTests(unittest.TestCase):
                 self.assertIsNotNone(db.execute("SELECT 1 FROM sqlite_master WHERE name='member_settings'").fetchone())
 
 
+class ShareRequestsMigrationTests(unittest.TestCase):
+    def test_a_version_6_database_gains_share_requests_and_can_be_downgraded_again(self):
+        import contextlib
+        import sqlite3
+        import tempfile
+        from pathlib import Path
+        from loom.database import Database, LATEST, downgrade
+        with tempfile.TemporaryDirectory() as root:
+            path = Path(root) / 'runtime.sqlite'
+            Database(path)
+            with contextlib.closing(sqlite3.connect(path, isolation_level=None)) as db:
+                db.execute('DROP TABLE share_requests')
+                db.execute('PRAGMA user_version=6')
+            Database(path)
+            with contextlib.closing(sqlite3.connect(path)) as db:
+                self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0], LATEST)
+                self.assertEqual(db.execute('SELECT COUNT(*) FROM share_requests').fetchone()[0], 0)
+            self.assertEqual(downgrade(path, 6), 6)
+            with contextlib.closing(sqlite3.connect(path)) as db:
+                self.assertIsNone(db.execute("SELECT 1 FROM sqlite_master WHERE name='share_requests'").fetchone())
+                self.assertIsNotNone(db.execute("SELECT 1 FROM sqlite_master WHERE name='member_preferences'").fetchone())
+
+
 class MemberPreferencesMigrationTests(unittest.TestCase):
     def test_a_version_5_database_gains_member_preferences_and_can_be_downgraded_again(self):
         import contextlib
