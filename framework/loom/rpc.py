@@ -87,39 +87,47 @@ class RuntimeAPI:
                 raise Denied('Chat binding unavailable or ambiguous')
             if self.verify_audience(scopes[0]) is not True:
                 raise RuntimeError('Current audience unavailable')
+        # Keep explicit control messages from racing the model scheduler.
+        with self.c.lock:
+            # The control-message handlers below each look at the same saved message; read it once per message.
+            self.c.accepted_cache = {}
+            try:
+                return self._dispatch(envelope)
+            finally:
+                self.c.accepted_cache = None
+
+    def _dispatch(self, envelope):
         from .platform_decisions import handle as human_decision
         from .platform_tasks import handle as human_task
         from .wechat_consent import handle as capture_consent
-        # Keep explicit control messages from racing the model scheduler.
-        with self.c.lock:
-            result = self.ingress.accept(envelope)
-            if self.engineering:
-                engineering=self.engineering.handle(envelope,result)
-                if engineering:
-                    result['capability_decision']=engineering
-                    return result
-            consent = capture_consent(self.c, envelope, result)
-            if consent:
-                result['wechat_consent'] = consent
+        from .sharing import handle as share_consent
+        from .unknown_contact import handle as personnel_decision
+        result = self.ingress.accept(envelope)
+        if self.engineering:
+            engineering=self.engineering.handle(envelope,result)
+            if engineering:
+                result['capability_decision']=engineering
                 return result
-            from .sharing import handle as share_consent
-            shared = share_consent(self.c, envelope, result)
-            if shared:
-                result['share_consent'] = shared
-                return result
-            decision = human_decision(self.c, envelope, result)
-            if decision:
-                result['human_decision'] = decision
-            else:
-                from .unknown_contact import handle as personnel_decision
-                recorded = personnel_decision(self.c, envelope, result)
-                if recorded:
-                    result['personnel_decision'] = recorded
-                    return result
-                task_control = human_task(self.c, envelope, result)
-                if task_control:
-                    result['human_task'] = task_control
+        consent = capture_consent(self.c, envelope, result)
+        if consent:
+            result['wechat_consent'] = consent
             return result
+        shared = share_consent(self.c, envelope, result)
+        if shared:
+            result['share_consent'] = shared
+            return result
+        decision = human_decision(self.c, envelope, result)
+        if decision:
+            result['human_decision'] = decision
+            return result
+        recorded = personnel_decision(self.c, envelope, result)
+        if recorded:
+            result['personnel_decision'] = recorded
+            return result
+        task_control = human_task(self.c, envelope, result)
+        if task_control:
+            result['human_task'] = task_control
+        return result
 
     def issue(self, ctx):
         if self.verify_audience and self.verify_audience(ctx.scope) is not True:
