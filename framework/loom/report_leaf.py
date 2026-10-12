@@ -48,7 +48,7 @@ class ReportLeaf:
             manifest={'schema':'loom-report-view-v1','id':ident,'family':old['family'] if old else ident,
                       'version':old['version']+1 if old else 1,'previous':previous,'spec':checked,
                       'template_version':templates.catalog()['version'],'checks':templates.metrics(spec)}
-            self.c.register(ctx,ident,'data');current=self.c.read(ctx,ident)
+            self.c.register(ctx,ident,'data');current=self.c.host_read(ctx,ident)
             if current['revision']:
                 # A renderer upgrade must not rewrite an already saved original
                 # or break an idempotent retry of its unchanged request.
@@ -77,7 +77,7 @@ class ReportLeaf:
             return {'report':ident,'state':'saved','version':manifest['version'],'checks':manifest['checks'],'originals':present}
 
     def load(self,ctx,ident):
-        identifier(ident);data=json.loads(self.c.read(ctx,ident)['text'])
+        identifier(ident);data=json.loads(self.c.host_read(ctx,ident)['text'])
         if data.get('schema')!='loom-report-view-v1' or data.get('id')!=ident:raise Denied('Saved report view required')
         self.sources(ctx,data['spec'])
         return data

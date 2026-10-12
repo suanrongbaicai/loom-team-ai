@@ -11,7 +11,7 @@ import zipfile
 from loom.control import Control, digest
 from loom.policy import Denied
 from loom.reports import Reports
-from loom.transport import Sender
+from loom.transport import NotSent, Sender
 from loom.wechat import WeChat
 from tests.test_control import fixture
 
@@ -220,8 +220,9 @@ class WeChatReportTests(unittest.TestCase):
         self.assertIn(b'fake-xlsx', calls[0][1].data)
         self.assertEqual(json.loads(calls[2][1]['content']), {'file_key': 'file-test'})
         calls.clear()
-        with self.assertRaises(Denied):
+        with self.assertRaises(NotSent) as held:                 # audience changed after upload: no message was submitted
             transport.send_file('app', 'oc_chat', 'b'*32, 'report.xlsx', b'fake-xlsx', lambda: False)
+        self.assertFalse(held.exception.retryable)
         self.assertEqual([x[0] for x in calls], ['upload'])
 
     def test_controller_staging_preserves_unhandled_chat(self):

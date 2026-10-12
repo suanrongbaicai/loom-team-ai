@@ -44,7 +44,7 @@ class CloudCopy:
         def check():
             guard()
             if self.cloud.binding(ctx)!=(app,people):raise Denied('复制接收范围已改变')
-            saved=self.c.read(ctx,source)
+            saved=self.c.host_read(ctx,source)
             with self.c.db.transaction() as db:
                 message=db.execute('SELECT * FROM messages WHERE resource=?',(source,)).fetchone()
                 publications=db.execute("SELECT body FROM cloud_publications WHERE scope=? AND report=? AND state='published'",(ctx.scope,source)).fetchall()
@@ -69,7 +69,7 @@ class CloudCopy:
         def result():return {k:body[k] for k in ('state','original','receipt','created','completed_at','reason') if k in body}|{'copy':ident,'data':ident}
         if body['state'] in ('saved','unknown','failed'):return result()
         self.c.register(ctx,ident,'data')
-        if not self.c.read(ctx,ident)['revision']:
+        if not self.c.host_read(ctx,ident)['revision']:
             self.c.commit(ctx,ident,0,encoded({'schema':'loom-cloud-copy-v1',**expected,'requested_at':body['created']}).decode(),ident,self.c.lease(ctx,ident,take_over=True))
         if not body.get('ticket'):
             # Credential acquisition fails before any export submission; do not mark that as unknown.

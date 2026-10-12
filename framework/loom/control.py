@@ -224,13 +224,20 @@ class Control:
     def read(self, ctx, key, revision=None, start=None, max_chars=None):
         return self.read_many(ctx,[{'id':key,'revision':revision,'start':start,'max_chars':max_chars}])[0]
 
+    def host_read(self, ctx, key, revision=None):
+        """The program's own read under the same permission checks. It stays in task_reads, so later actions and
+        deliveries still re-check it, but it is audited as host.read: it never counts as the model having read the text."""
+        with self.lock, self.db.transaction() as db:
+            self._check(db,ctx)
+            return self._read_record(db,ctx,key,revision,action='host.read')
+
     def read_many(self,ctx,requests):
         with self.lock, self.db.transaction() as db:
             self._check(db,ctx)
             # No successful-read receipt survives if any requested item fails.
             return [self._read_record(db,ctx,v['id'],v.get('revision'),v.get('start'),v.get('max_chars')) for v in requests]
 
-    def _read_record(self,db,ctx,key,revision=None,start=None,max_chars=None):
+    def _read_record(self,db,ctx,key,revision=None,start=None,max_chars=None,action='document.read'):
         policy = self._check(db, ctx)
         row, resource = self._document(db, key)
         policy.require_read(ctx, resource)
@@ -245,7 +252,7 @@ class Control:
             raise ValueError('Invalid original text range; start is a character offset, max_chars is 1..64000')
         end = min(len(text), begin+length) if partial else len(text)
         db.execute('INSERT OR IGNORE INTO task_reads VALUES(?,?)', (ctx.task, key))
-        self.audit(db, ctx.principal, ctx.task, 'document.read',
+        self.audit(db, ctx.principal, ctx.task, action,
                    {'resource': key, 'revision': revision, 'ranges': [[begin,end]], 'partial': partial})
         result = {'id': key, 'revision': revision, 'current_revision': row['revision'], 'text': text[begin:end],
                   'start':begin,'end':end,'total_chars':len(text),'full_text':begin==0 and end==len(text),

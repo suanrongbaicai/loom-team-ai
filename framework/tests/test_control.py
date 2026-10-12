@@ -56,6 +56,19 @@ class ControlTests(unittest.TestCase):
         self.state['grants'] = [item]
         self.c.set_policy(self.state, 'synthetic-grant')
 
+    def test_a_host_read_is_rechecked_but_never_counts_as_the_model_reading(self):
+        from loom.references import excerpt_was_read, read_versions
+        a = self.c.task('alice', 'alice-private')
+        self.record(a, 'note', '只有程序读过的正文', kind='data')
+        self.assertEqual(self.c.host_read(a, 'note')['text'], '只有程序读过的正文')
+        with self.c.db.transaction() as db:
+            self.assertTrue(db.execute('SELECT 1 FROM task_reads WHERE task=? AND document=?', (a.task, 'note')).fetchone())
+            self.assertFalse(excerpt_was_read(db, a.task, 'note', 1, 0, 3))
+            self.assertEqual(read_versions(db, a.task, 'note'), [])
+        self.c.read(a, 'note')
+        with self.c.db.transaction() as db:
+            self.assertTrue(excerpt_was_read(db, a.task, 'note', 1, 0, 3))
+
     def test_on_demand_private_record_is_usable_in_group(self):
         self.record(self.a)
         g = self.c.task('bob', 'group')
