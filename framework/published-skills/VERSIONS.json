@@ -102,9 +102,16 @@
     {
       "skill": "loom-work-records",
       "version": "v16-consistent-rules",
-      "framework_identical": true,
+      "framework_identical": false,
       "registered_digest_verified": false,
       "replaces": "v15-share-conclusion"
+    },
+    {
+      "skill": "loom-work-records",
+      "version": "v17-compact-rules",
+      "framework_identical": true,
+      "registered_digest_verified": false,
+      "replaces": "v16-consistent-rules"
     },
     {
       "skill": "antv-g2-chart",

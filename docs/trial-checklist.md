@@ -6,7 +6,7 @@
 
 - **两个真实成员账号**，下面称甲、乙；再准备一个甲乙都在的群。不要在同一个账号里切换扮演两个人，否则测不出“会不会串到别人那里”。
 - **部署新代码**：用 `tools/deploy_update.py` 替换框架代码。数据库会自动升到第 7 版，升级前程序会先备份。
-- **只给试用范围换技能**：用 `tools/skill_upgrade.py` 把甲、乙的私聊和试用群切到 `loom-work-records` `v16-consistent-rules` 和 `loom-people` `v3-member-preferences`。先不加 `--execute` 只读检查一次，确认无误再执行。其他成员保持原版本。
+- **只给试用范围换技能**：用 `tools/skill_upgrade.py` 把甲、乙的私聊和试用群切到 `loom-work-records` `v17-compact-rules` 和 `loom-people` `v3-member-preferences`。先不加 `--execute` 只读检查一次，确认无误再执行。其他成员保持原版本。
 - **试用前跑一次统计**，作为对照：`python tools/trial_report.py --control <控制目录> --days 7 --json before.json`
 
 ## 场景
