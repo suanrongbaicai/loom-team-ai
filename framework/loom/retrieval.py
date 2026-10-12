@@ -243,6 +243,7 @@ def search(c, ctx, query=None, limit=20, queries=None, kinds=None, offset=0, sna
 
 
 def objects(c,ctx,query=None,limit=30,offset=0,snapshot=None):
+    from .lookup import recheck
     if type(limit) is not int or not 1<=limit<=100: raise ValueError('limit must be 1..100')
     if query is not None and (not isinstance(query,str) or not query.strip() or len(query)>256):
         raise ValueError('Invalid object query')
@@ -258,11 +259,15 @@ def objects(c,ctx,query=None,limit=30,offset=0,snapshot=None):
             q=normalized(query) if query is not None else None
             exact=q is not None and any(q==normalized(n) for n in names)
             if q is not None and not any(q in normalized(n) for n in names) and q!=normalized(row['id']):continue
-            entries.append({'id':row['id'],'revision':row['revision'],'name':item['name'],
-                            'aliases':item['aliases'],'type':item.get('type',''),
-                            'related':[key for key in item.get('related',[]) if key in available],
-                            'match':'exact_name_or_alias' if exact else 'candidate',
-                            'authority':'model-recorded business correspondence; not identity or permission'})
+            entry={'id':row['id'],'revision':row['revision'],'name':item['name'],
+                   'aliases':item['aliases'],'type':item.get('type',''),
+                   'related':[key for key in item.get('related',[]) if key in available],
+                   'match':'exact_name_or_alias' if exact else 'candidate',
+                   'authority':'model-recorded business correspondence; not identity or permission'}
+            status=recheck(item)
+            if status:
+                entry['recheck']=status
+            entries.append(entry)
         entries.sort(key=lambda v:(v['match']!='exact_name_or_alias',v['id']))
         page=entries[offset:offset+limit];more=offset+len(page)<len(entries)
         c.audit(db,ctx.principal,ctx.task,'objects.located',{'query':query,'returned':[x['id'] for x in page],

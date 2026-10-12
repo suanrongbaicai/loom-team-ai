@@ -199,5 +199,47 @@ class RetrievalRpcTests(unittest.TestCase):
         # Retrying an older successful body update must not pick up the new name.
         self.assertEqual(self.api.call(token,'record',edit),first)
 
+    def priced(self,token,recheck_after):
+        self.api.call(token,'record',{'id':'quote','kind':'data','text':'甲客户报价每件12元。','commit_id':'quote-source'})
+        self.api.call(token,'read',{'id':'quote'})
+        descriptor={'name':'甲客户','type':'客户','recheck_after':recheck_after,
+                    'evidence':[{'id':'quote','revision':1,'quote':'甲客户报价每件12元。'}]}
+        return self.api.call(token,'record',{'id':'client','kind':'context','text':'报价见 quote，最近核对时为每件12元。',
+                                             'commit_id':'client-1','lookup':descriptor})
+
+    def test_recheck_date_is_reported_on_read_and_objects(self):
+        from datetime import date
+        token=self.ready()
+        self.priced(token,'2999-01-01')
+        read=self.api.call(token,'read',{'id':'client'})
+        self.assertEqual((read['recheck']['recheck_after'],read['recheck']['due']),('2999-01-01',False))
+        entry=self.api.call(token,'objects',{'query':'甲客户'})['entries'][0]
+        self.assertFalse(entry['recheck']['due'])
+        with patch('loom.lookup.today',return_value=date(2999,1,1)):
+            self.assertTrue(self.api.call(token,'read',{'id':'client'})['recheck']['due'])
+            self.assertTrue(self.api.call(token,'objects',{'query':'甲客户'})['entries'][0]['recheck']['due'])
+        self.assertNotIn('recheck',self.api.call(token,'read',{'id':'quote'}))
+
+    def test_recheck_date_must_be_a_valid_future_or_today_date(self):
+        token=self.ready()
+        for value in ('2000-01-01','2999-1-1','明天',20990101):
+            with self.assertRaises(ValueError):self.priced(token,value)
+
+    def test_body_update_keeps_a_due_date_and_history_has_no_reminder(self):
+        from datetime import date
+        token=self.ready()
+        self.priced(token,'2999-01-01')
+        with patch('loom.lookup.today',return_value=date(3000,1,1)):
+            self.api.call(token,'record',{'id':'client','kind':'context','base':1,'text':'报价待重新核对。','commit_id':'client-2'})
+            current=self.api.call(token,'read',{'id':'client'})
+            self.assertTrue(current['recheck']['due'])
+            self.assertIn('报价待重新核对。',current['text'])
+            self.assertNotIn('recheck',self.api.call(token,'read',{'id':'client','revision':1}))
+
+    def test_contexts_without_a_date_are_unchanged(self):
+        token=self.ready()
+        self.api.call(token,'record',{'id':'plain','kind':'context','text':'没有登记信息。','commit_id':'plain-1'})
+        self.assertNotIn('recheck',self.api.call(token,'read',{'id':'plain'}))
+
 
 if __name__=='__main__':unittest.main()
