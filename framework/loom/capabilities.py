@@ -11,15 +11,12 @@ import re
 import sqlite3
 import uuid
 
+from .serialization import canonical
 from .control import digest, identifier, within, write_durable
 from .human_messages import accepted_text, context, queue, replied_action
 from .policy import Denied, instant, utcnow
 from .wechat_consent import account_for
 from .capability_projects import Projects
-
-
-def canonical(value):
-    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':'))
 
 
 def safe_name(value):

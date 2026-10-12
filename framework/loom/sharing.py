@@ -7,6 +7,7 @@ disclosure, not a team decision: making it a team rule still goes through the te
 from datetime import datetime, timedelta, timezone
 import json
 
+from .serialization import canonical
 from .control import digest, identifier
 from .human_messages import accepted_text, context, queue, replied_action
 from .member_labels import label_of
@@ -14,10 +15,6 @@ from .policy import Context, Denied, utcnow
 
 MAX_TEXT = 1500
 MAX_SOURCES = 10
-
-
-def canonical(value):
-    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':'))
 
 
 def name_of(state, scope):

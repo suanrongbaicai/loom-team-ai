@@ -3,11 +3,8 @@ import json
 import uuid
 from datetime import datetime, timedelta, timezone
 
+from .serialization import canonical
 from .policy import Denied, instant, utcnow
-
-
-def canonical(value):
-    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':'))
 
 
 POLICY_FIELDS = {'grants', 'decision_rules', 'handoff_rules'}

@@ -6,13 +6,10 @@ read messages. Each immutable request freezes time, purpose and full audience.
 from datetime import datetime, timezone, timedelta
 import json
 
+from .serialization import canonical
 from .control import digest, identifier
 from .human_messages import accepted_text, context, queue, replied_action
 from .policy import Denied, instant, utcnow
-
-
-def canonical(value):
-    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':'))
 
 
 def account_for(policy, ctx, key):
