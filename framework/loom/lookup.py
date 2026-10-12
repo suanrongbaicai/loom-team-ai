@@ -1,5 +1,5 @@
 """Optional model-chosen lookup metadata, kept in its existing Context original."""
-from datetime import date, datetime, timezone
+from datetime import date
 import json
 
 from .control import identifier
@@ -60,7 +60,8 @@ def validate(c,ctx,db,value):
 
 
 def today():
-    return datetime.now(timezone.utc).date()
+    """The deployment machine's local date: a team's "today" for recheck dates, not the UTC date."""
+    return date.today()
 
 
 def recheck(item):
