@@ -160,6 +160,16 @@ class Membership:
             raise ValueError('Audience freshness must be 1..15 seconds')
         self.c, self.clients, self.ttl = control, clients, ttl_seconds
 
+    def _suspend(self, scope_id, reason):
+        with self.c.db.transaction() as db:
+            current = self.c.db.get_policy(db)
+            scope = current['scopes'].get(scope_id)
+            if not scope or not scope.get('membership_verified'):
+                return
+            scope.update(membership_verified=False, membership_expires_at=datetime.now(timezone.utc).isoformat())
+            db.execute('UPDATE policy SET body=? WHERE singleton=1', (json.dumps(current),))
+            self.c.audit(db, 'platform-verifier', None, 'audience.suspended', {'scope': scope_id, 'error_type': reason})
+
     def verify(self, scope_id, force=False, _again=True):
         with self.c.lock:
             with self.c.db.transaction() as db:
@@ -187,6 +197,13 @@ class Membership:
                 # A group the bot was simply added to is judged by the tenant-wide person id, so it does not matter which
                 # of our applications each member happens to be talking to.
                 actual = self.clients[app].members(binding['chat'], 'union_id' if auto else 'open_id')
+            except Exception as error:
+                # Platform or network failure: the audience is unknown, not changed. Suspend only this scope;
+                # recipients() refuses an unverified scope, so its reads, tasks and queued replies stop until a fresh
+                # verification, while every other scope keeps its authorization epoch.
+                self._suspend(scope_id, type(error).__name__)
+                raise AudienceUnavailable('Current group audience could not be verified') from None
+            try:
                 observed = set()
                 for member in actual:
                     if auto:
@@ -200,7 +217,7 @@ class Membership:
                 else:
                     changed = False
             except Exception:
-                # Expire the whole context, including pending saved replies.
+                # A different or unknown audience is a real change: expire every loaded context and queued reply.
                 state = policy.state
                 if scope.get('membership_verified'):
                     scope['membership_verified'] = False
