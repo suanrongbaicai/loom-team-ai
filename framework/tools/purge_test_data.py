@@ -14,6 +14,7 @@ never from keywords or time ranges, and it is built so that "nothing else change
 Kept things need no list to stay safe: any row not selected must be byte-identical afterwards.
 """
 import argparse
+import contextlib
 import hashlib
 import json
 import os
@@ -447,7 +448,29 @@ def controller_listening(port=9764):
         return probe.connect_ex(('127.0.0.1', port)) == 0
 
 
+@contextlib.contextmanager
+def service_leases(control):
+    """Hold the controller and gateway leases, as wipe_rebuild and backup restore do: a controller on another port
+    or one still starting holds its lock even when the default port is closed."""
+    from loom.instance import InstanceBusy, InstanceLock
+    control = Path(control)
+    with contextlib.ExitStack() as stack:
+        for lock in [control / '.controller.lock'] + [g / '.gateway.lock' for g in sorted(control.parent.glob('Gateway*'))]:
+            try:
+                stack.enter_context(InstanceLock(lock))
+            except InstanceBusy:
+                raise Refused('A service still holds ' + lock.name + ' in ' + str(lock.parent)) from None
+        yield
+
+
 def apply(c, seed, archive_dir, output_roots=(), listening=controller_listening, extra_delete=None, remove_files=True, control_root=None, rehearsal=False):
+    if rehearsal:
+        return _apply(c, seed, archive_dir, output_roots, listening, extra_delete, remove_files, control_root, rehearsal)
+    with service_leases(c.root):
+        return _apply(c, seed, archive_dir, output_roots, listening, extra_delete, remove_files, control_root, rehearsal)
+
+
+def _apply(c, seed, archive_dir, output_roots=(), listening=controller_listening, extra_delete=None, remove_files=True, control_root=None, rehearsal=False):
     """Delete inside one transaction, verify nothing else changed, then remove files. `extra_delete` is a test hook."""
     if rehearsal:
         # a copy only: the production port guard does not apply, but everything that makes it safe must hold

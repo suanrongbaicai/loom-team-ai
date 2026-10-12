@@ -287,6 +287,10 @@ def revalidate(plan):
         if link:
             problems.append('Link on path chain: ' + link)
     for directory in plan['clear_dirs']:
+        # A saved or hand-edited plan must still name only folders under the LOOM root.
+        if not inside(plan['loom_root'], directory):
+            problems.append('Outside the allowed root: ' + str(directory))
+            continue
         if Path(directory).exists():
             list_tree(directory, problems)
     if problems:

@@ -273,6 +273,16 @@ class WipeTests(unittest.TestCase):
         with self.assertRaises(wr.Refused):
             wr.restore(plan, self.dest, **self.stopped)
 
+    def test_an_edited_plan_naming_a_folder_outside_the_root_is_refused(self):
+        plan = self.prepare()
+        outside = Path(self.temp.name).absolute() / 'elsewhere'
+        outside.mkdir()
+        (outside / 'keep.txt').write_text('not part of LOOM')
+        plan['clear_dirs'] = plan['clear_dirs'] + [str(outside)]
+        with self.assertRaises(wr.Refused):
+            wr.apply(plan, self.dest, **self.stopped)
+        self.assertTrue((outside / 'keep.txt').exists())
+
     def test_backup_file_set_must_match_the_plan(self):
         plan = self.prepare()
         (self.control / 'Artifacts' / 'extra.txt').write_text('later')
