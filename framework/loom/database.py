@@ -40,6 +40,9 @@ CREATE TABLE IF NOT EXISTS file_replies(reply_document TEXT PRIMARY KEY,report_d
 CREATE TABLE IF NOT EXISTS citation_batches(id TEXT PRIMARY KEY,task TEXT NOT NULL,event TEXT NOT NULL,body TEXT NOT NULL,digest TEXT NOT NULL);
 CREATE INDEX IF NOT EXISTS citation_batches_task ON citation_batches(task);
 CREATE INDEX IF NOT EXISTS audit_action_id ON audit(action,id);
+CREATE INDEX IF NOT EXISTS audit_task_action_id ON audit(task,action,id);
+CREATE INDEX IF NOT EXISTS commits_document_revision ON commits(document,revision);
+CREATE INDEX IF NOT EXISTS commits_task ON commits(task);
 CREATE TABLE IF NOT EXISTS materials(document TEXT PRIMARY KEY,source TEXT NOT NULL,part TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS cloud_publications(id TEXT PRIMARY KEY,task TEXT NOT NULL,scope TEXT NOT NULL,report TEXT NOT NULL,format TEXT NOT NULL,state TEXT NOT NULL,body TEXT NOT NULL,created TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS cloud_copies(id TEXT PRIMARY KEY,scope TEXT NOT NULL,body TEXT NOT NULL);

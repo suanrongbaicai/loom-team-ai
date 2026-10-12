@@ -148,6 +148,29 @@ class UsageTablesMigrationTests(unittest.TestCase):
                 self.assertIsNotNone(db.execute("SELECT 1 FROM sqlite_master WHERE name='member_settings'").fetchone())
 
 
+class IndexTests(unittest.TestCase):
+    def test_opening_an_existing_database_adds_the_lookup_indexes_without_a_version_change(self):
+        import contextlib
+        import sqlite3
+        import tempfile
+        from pathlib import Path
+        from loom.database import Database, LATEST
+        names = ('audit_task_action_id', 'commits_document_revision', 'commits_task')
+        with tempfile.TemporaryDirectory() as root:
+            path = Path(root) / 'runtime.sqlite'
+            Database(path)
+            with contextlib.closing(sqlite3.connect(path, isolation_level=None)) as db:
+                for name in names:
+                    db.execute('DROP INDEX ' + name)
+            Database(path)
+            with contextlib.closing(sqlite3.connect(path)) as db:
+                found = {r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='index'")}
+                self.assertTrue(set(names) <= found)
+                self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0], LATEST)
+                plan = ' '.join(str(r) for r in db.execute("EXPLAIN QUERY PLAN SELECT id FROM audit WHERE task='t' AND action='document.read'"))
+                self.assertIn('audit_task_action_id', plan)
+
+
 class ShareRequestsMigrationTests(unittest.TestCase):
     def test_a_version_6_database_gains_share_requests_and_can_be_downgraded_again(self):
         import contextlib
