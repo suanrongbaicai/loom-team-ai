@@ -22,7 +22,8 @@ CITATIONS={'type':'array','maxItems':40,'items':schema({'id':S,'revision':I,'quo
 PASSAGE=schema({'event':ID,'base':I,'text':S,'commit_id':ID,'citations':CITATIONS,'take_over':B},['event','base','text','commit_id','citations'])
 LOOKUP=schema({'name':S,'aliases':{'type':'array','maxItems':20,'items':S},'type':S,
     'related':{'type':'array','maxItems':30,'items':S},
-    'evidence':{'type':'array','minItems':1,'maxItems':6,'items':CITATIONS['items']}},['name','evidence'])
+    'evidence':{'type':'array','minItems':1,'maxItems':6,'items':CITATIONS['items']},
+    'recheck_after':{'type':'string','description':'可选 YYYY-MM-DD：对象含易变值时，最早需要重新核对来源的日期；只能在实际读取来源后设定或延后。'}},['name','evidence'])
 READ=schema({'id':S,'revision':I,'start':I,'max_chars':{'type':'integer','minimum':1,'maximum':64000}},['id'])
 CONTEXT_PATCH=schema({'id':S,'base':{'type':'integer','minimum':1},'commit_id':ID,'take_over':B,
     'edits':{'type':'array','minItems':1,'maxItems':12,'items':schema({'old':S,'new':S},['old','new'])},

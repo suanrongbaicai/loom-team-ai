@@ -1,4 +1,5 @@
 """Optional model-chosen lookup metadata, kept in its existing Context original."""
+from datetime import date, datetime, timezone
 import json
 
 from .control import identifier
@@ -10,8 +11,18 @@ from .retrieval import metadata, normalized
 def validate(c,ctx,db,value):
     if not isinstance(value,dict):
         raise ValueError('Explicit lookup descriptor required')
-    if set(value)-{'schema','name','aliases','type','related','evidence'}:
+    if set(value)-{'schema','name','aliases','type','related','evidence','recheck_after'}:
         raise ValueError('Unknown lookup descriptor fields')
+    recheck_after=value.get('recheck_after')
+    if recheck_after is not None:
+        try:
+            when=date.fromisoformat(recheck_after) if isinstance(recheck_after,str) and len(recheck_after)==10 else None
+        except ValueError:
+            when=None
+        if when is None:
+            raise ValueError('recheck_after must be a YYYY-MM-DD date')
+        if when<today():
+            raise ValueError('recheck_after cannot be in the past; check the source first, then set the next date')
     name=value.get('name');aliases=value.get('aliases',[]);kind=value.get('type','')
     related=value.get('related',[]);evidence=value.get('evidence')
     if not isinstance(name,str) or not name.strip() or len(name)>100:
@@ -42,7 +53,28 @@ def validate(c,ctx,db,value):
         if not excerpt_was_read(db,ctx.task,key,revision,begin,begin+len(excerpt)):
             raise Denied('先实际读取对象对应的依据，再保存名称和别名。')
         sources.append({'id':key,'revision':revision,'quote':excerpt})
-    return {'schema':1,'name':name.strip(),'aliases':aliases,'type':kind,'related':related,'evidence':sources}
+    item={'schema':1,'name':name.strip(),'aliases':aliases,'type':kind,'related':related,'evidence':sources}
+    if recheck_after is not None:
+        item['recheck_after']=recheck_after
+    return item
+
+
+def today():
+    return datetime.now(timezone.utc).date()
+
+
+def recheck(item):
+    """Date comparison only: whether the model-set recheck date has arrived. Never judges the content."""
+    value=(item or {}).get('recheck_after')
+    if not isinstance(value,str):
+        return None
+    try:
+        due=date.fromisoformat(value)<=today()
+    except ValueError:
+        return None
+    return {'recheck_after':value,'due':due,
+            'meaning':('已到复核日期：用于会改变结果的判断前，先重新读取来源；无法核对时说明最近核对时间并标为待核。'
+                       if due else '未到复核日期；易变值仍以来源为准。')}
 
 
 def compose(c,ctx,text,value):

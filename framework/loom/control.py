@@ -247,9 +247,16 @@ class Control:
         db.execute('INSERT OR IGNORE INTO task_reads VALUES(?,?)', (ctx.task, key))
         self.audit(db, ctx.principal, ctx.task, 'document.read',
                    {'resource': key, 'revision': revision, 'ranges': [[begin,end]], 'partial': partial})
-        return {'id': key, 'revision': revision, 'current_revision': row['revision'], 'text': text[begin:end],
-                'start':begin,'end':end,'total_chars':len(text),'full_text':begin==0 and end==len(text),
-                'next_start':end if end<len(text) else None}
+        result = {'id': key, 'revision': revision, 'current_revision': row['revision'], 'text': text[begin:end],
+                  'start':begin,'end':end,'total_chars':len(text),'full_text':begin==0 and end==len(text),
+                  'next_start':end if end<len(text) else None}
+        if row['kind'] == 'context' and revision == row['revision']:
+            from .lookup import recheck
+            from .retrieval import metadata
+            status = recheck(metadata(text))
+            if status:
+                result['recheck'] = status
+        return result
 
     def search(self, ctx, query=None, limit=20, **options):
         from .retrieval import search
