@@ -212,6 +212,25 @@ class GatewayImageTests(unittest.TestCase):
         with self.assertRaises(NotSent): t.send_image('app-alice','oc_private',uuid.uuid4().hex,png(),lambda:next(n))
         self.assertEqual(self.calls,[])
 
+    def test_file_upload_failure_or_audience_change_is_not_sent(self):
+        t=self.transport()
+        class Down:
+            def open(self,request,timeout): raise OSError('upload connection reset')
+        t.client.http=Down()
+        with self.assertRaises(NotSent) as failed: t.send_file('app-alice','oc_private',uuid.uuid4().hex,'report.xlsx',b'xlsx',lambda:True)
+        self.assertTrue(failed.exception.retryable)
+        t=self.transport()
+        class Uploaded:
+            def __enter__(self): return self
+            def __exit__(self,*args): pass
+            def read(self,n): return json.dumps({'code':0,'data':{'file_key':'file_test'}}).encode()
+        class Up:
+            def open(self,request,timeout): return Uploaded()
+        t.client.http=Up()
+        with self.assertRaises(NotSent) as changed: t.send_file('app-alice','oc_private',uuid.uuid4().hex,'report.xlsx',b'xlsx',lambda:False)
+        self.assertFalse(changed.exception.retryable)
+        self.assertEqual(self.calls,[])
+
     def test_mismatched_receipt_does_not_claim_success(self):
         t=self.transport({'data':{'message_id':'om_wrong','chat_id':'oc_other'}})
         with self.assertRaises(RuntimeError): t.send_image('app-alice','oc_private',uuid.uuid4().hex,png(),lambda:True)

@@ -161,19 +161,26 @@ class FeishuTransport:
         parts.extend([('--' + boundary + '\r\nContent-Disposition: form-data; name="file"; filename="report.xlsx"\r\n'
                       'Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet\r\n\r\n').encode(),
                       data, ('\r\n--' + boundary + '--\r\n').encode()])
-        token = self.client.token()
-        request = urllib.request.Request(self.client.ORIGIN + '/open-apis/im/v1/files', b''.join(parts),
-            {'Authorization': 'Bearer ' + token, 'Content-Type': 'multipart/form-data; boundary=' + boundary})
-        with self.client.http.open(request, timeout=60) as response:
-            raw = response.read(65537)
-        if len(raw) > 65536:
-            raise RuntimeError('File upload response exceeds bound')
-        result = json.loads(raw)
-        file_key = result.get('data', {}).get('file_key')
-        if result.get('code') != 0 or not isinstance(file_key, str) or not file_key:
-            raise RuntimeError('File upload was not confirmed')
-        if still_current() is not True:
-            raise Denied('File delivery authority unavailable after upload')
+        try:
+            token = self.client.token()
+            request = urllib.request.Request(self.client.ORIGIN + '/open-apis/im/v1/files', b''.join(parts),
+                {'Authorization': 'Bearer ' + token, 'Content-Type': 'multipart/form-data; boundary=' + boundary})
+            with self.client.http.open(request, timeout=60) as response:
+                raw = response.read(65537)
+            if len(raw) > 65536:
+                raise RuntimeError('File upload response exceeds bound')
+            result = json.loads(raw)
+            file_key = result.get('data', {}).get('file_key')
+            if result.get('code') != 0 or not isinstance(file_key, str) or not file_key:
+                raise RuntimeError('File upload was not confirmed')
+        except Exception:
+            # Upload failure cannot have submitted a conversation message.
+            raise NotSent(True) from None
+        try:
+            if still_current() is not True:
+                raise Denied('File delivery authority unavailable after upload')
+        except Exception:
+            raise NotSent(False) from None
         result = self.client._request('/open-apis/im/v1/messages?receive_id_type=chat_id',
             {'receive_id': chat, 'msg_type': 'file', 'content': json.dumps({'file_key': file_key}),
              'uuid': str(uuid.UUID(send_id))}, token=self.client.token())
