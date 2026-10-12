@@ -7,7 +7,7 @@ from unittest import mock
 from loom.control import Control
 from loom.skills import Skills, tree_digest
 from tests.test_control import fixture
-from tests.test_skills_switch import write_skill
+from tests.fixtures.skills import write_skill
 from tools import skill_upgrade
 
 KEY = 'loom-work-records'

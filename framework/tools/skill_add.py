@@ -1,6 +1,6 @@
 """Protected administrator tool: publish ONE new skill and deploy it to chosen scopes (additive; nothing existing changes).
 
-Unlike skills_switch.py nothing is replaced or moved, so the controller keeps running: Skills.deploy copies the skill
+Nothing is replaced or moved (skill_upgrade.py switches an existing skill's version), so the controller keeps running: Skills.deploy copies the skill
 into the Work directory and registers the deployment inside one write transaction, so a task never sees one without the
 other.  The tool refuses to run while any task, execution or reply send is in flight, takes a database backup first, never writes a
 skill.loaded audit (only a real task's trusted hook does), and on failure removes only what this run created.
