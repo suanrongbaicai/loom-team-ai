@@ -120,6 +120,33 @@ class MembershipTests(unittest.TestCase):
         self.members.verify('group')
         self.assertEqual(self.c.search(ctx, '记录')['results'], [])
 
+    def test_the_platform_call_does_not_hold_the_controller_lock(self):
+        import threading
+        free = []
+
+        def members(*args):
+            got = []
+            worker = threading.Thread(target=lambda: got.append(self.c.lock.acquire(timeout=1) and (self.c.lock.release() or True)))
+            worker.start(); worker.join()
+            free.append(got == [True])
+            return [{'tenant': 'team', 'account': p} for p in ['alice', 'bob']]
+        self.client.members.side_effect = members
+        self.assertTrue(self.members.verify('group', force=True))
+        self.assertEqual(free, [True])
+
+    def test_a_policy_change_during_the_platform_call_discards_the_result(self):
+        with self.c.db.transaction() as db:
+            before = self.c.policy(db).epoch
+
+        def members(*args):
+            self.c.set_policy(dict(self.state, grants=[]), 'grant revoked meanwhile')
+            return [{'tenant': 'team', 'account': p} for p in ['alice', 'bob']]
+        self.client.members.side_effect = members
+        with self.assertRaisesRegex(AudienceUnavailable, 'Policy changed'):
+            self.members.verify('group', force=True)
+        with self.c.db.transaction() as db:
+            self.assertGreater(self.c.policy(db).epoch, before)
+
     def test_network_error_suspends_only_that_group(self):
         self.members.verify('group')
         group = self.c.task('bob', 'group')
