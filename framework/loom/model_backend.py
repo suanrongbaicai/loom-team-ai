@@ -13,7 +13,7 @@ import uuid
 from .appserver import AppServer, HostDisconnected
 from .control import identifier, within, write_durable
 from .instance import InstanceLock
-from .mcp import TOOLS, handle as handle_mcp
+from .mcp import TOOLS, available_tools, handle as handle_mcp
 from .policy import Denied
 from .worker import launch as launch_cli
 
@@ -179,8 +179,10 @@ class Host:
                 'features': {'hooks': False, 'shell_tool': False, 'apps': False, 'plugins': False,
                              'multi_agent': False, 'code_mode': False, 'view_image': False},
                 'mcp_servers': {}, 'web_search': 'disabled'}
+            with api.c.db.transaction() as db:
+                kind = api.c.policy(db).state['scopes'][ctx.scope]['kind']
             tools = [{'type': 'function', 'name': 'loom_' + t['name'],
-                'description': t['description'], 'inputSchema': t['inputSchema']} for t in TOOLS]
+                'description': t['description'], 'inputSchema': t['inputSchema']} for t in available_tools(api, kind)]
             # Files and commands are mediated by the existing task-bound LOOM
             # tools (Commands uses its own per-command AppContainer). An empty
             # official environment selection removes native filesystem/shell
