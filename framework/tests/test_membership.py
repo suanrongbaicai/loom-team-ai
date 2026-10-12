@@ -120,6 +120,29 @@ class MembershipTests(unittest.TestCase):
         self.members.verify('group')
         self.assertEqual(self.c.search(ctx, '记录')['results'], [])
 
+    def test_network_error_suspends_only_that_group(self):
+        self.members.verify('group')
+        group = self.c.task('bob', 'group')
+        other = self.c.task('alice', 'alice-private')
+        oid = self.c.queue_reply(other, self.c.save_reply(other, '私聊里的回复')['id'])
+        held = self.c.queue_reply(group, self.c.save_reply(group, '群里的回复')['id'])
+        with self.c.db.transaction() as db:
+            epoch = self.c.policy(db).epoch
+        self.client.members.side_effect = AudienceUnavailable('offline')
+        with self.assertRaises(AudienceUnavailable):
+            self.members.verify('group', force=True)
+        with self.c.db.transaction() as db:
+            self.assertEqual(self.c.policy(db).epoch, epoch)
+            self.assertEqual(db.execute('SELECT state FROM outbox WHERE id=?', (oid,)).fetchone()[0], 'queued')
+        self.assertEqual(self.c.begin_send(oid)['text'], '私聊里的回复')
+        with self.assertRaises(Denied):
+            self.c.begin_send(held)
+        with self.assertRaises(Denied):
+            self.c.search(group, '记录')
+        self.client.members.side_effect = None
+        self.assertTrue(self.members.verify('group', force=True))
+        self.assertEqual(self.c.search(group, '记录')['results'], [])
+
     def test_unknown_identity_and_network_error_do_not_use_stale_members(self):
         for outcome in ([{'tenant': 'team', 'account': 'unknown'}], AudienceUnavailable('offline')):
             self.c.set_policy(self.state, 'reset-test')
