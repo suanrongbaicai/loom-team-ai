@@ -7,14 +7,11 @@ from pathlib import Path
 import sqlite3
 import uuid
 
+from .serialization import canonical
 from .control import digest, identifier, within
 from .conversation import bot
 from .member_labels import label_of
 from .policy import Context, Denied, Policy, instant, utcnow
-
-
-def canonical(value):
-    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':'))
 
 
 def admission(path, app, tenant, account, chat):

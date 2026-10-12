@@ -10,14 +10,11 @@ from pathlib import Path
 import threading
 import uuid
 
+from .serialization import canonical
 from .control import digest, identifier, within, write_durable
 from .policy import Denied, instant, utcnow
 from .wechat import FIELDS, MAX_SOURCE_BYTES
 from .wechat_consent import CaptureConsent
-
-
-def canonical(value):
-    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':'))
 
 
 class WeChatCapture:
