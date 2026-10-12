@@ -167,7 +167,7 @@ class Control:
 
     def _check(self, db, ctx, writable=False):
         policy = self.policy(db)
-        policy.recipients(ctx)
+        audience = policy.recipients(ctx)
         task = db.execute('SELECT * FROM tasks WHERE id=?', (ctx.task,)).fetchone()
         if not task or (task['actor'], task['scope'], task['epoch']) != (ctx.principal, ctx.scope, ctx.epoch):
             raise Denied('Task binding mismatch')
@@ -176,9 +176,13 @@ class Control:
         # Time-limited grants can expire without a policy edit. Previously
         # loaded material must still be authorized before further actions or
         # external delivery; a saved reply is not a fresh disclosure grant.
-        for prior in db.execute('SELECT document FROM task_reads WHERE task=?', (ctx.task,)).fetchall():
-            _, resource = self._document(db, prior['document'])
-            policy.require_read(ctx, resource)
+        # One query for all of them; the audience is computed once above.
+        for row in db.execute('SELECT r.document, d.* FROM task_reads r LEFT JOIN documents d ON d.id=r.document '
+                              'WHERE r.task=?', (ctx.task,)).fetchall():
+            if row['id'] is None:
+                raise Denied('Resource unavailable in this audience')
+            policy.require_read(ctx, Resource(row['id'], row['owner'], row['scope'], row['kind'], row['created'],
+                                              tuple(json.loads(row['audience']))), audience)
         if writable and task['state'] in ('done', 'failed', 'interrupted'):
             raise Denied('Task not writable: 该任务已结束（'+task['state']+'）。finish=true 的交付会结束任务；一次任务要发多条消息时，前面的用 finish=false，最后一条 finish=true。结束后不能再交付，需要补充请等用户的新消息。')
         for use in db.execute('SELECT s.state FROM skill_uses u JOIN skills s ON s.id=u.skill AND s.version=u.version WHERE u.task=?', (ctx.task,)):
@@ -228,17 +232,17 @@ class Control:
         """The program's own read under the same permission checks. It stays in task_reads, so later actions and
         deliveries still re-check it, but it is audited as host.read: it never counts as the model having read the text."""
         with self.lock, self.db.transaction() as db:
-            self._check(db,ctx)
-            return self._read_record(db,ctx,key,revision,action='host.read')
+            policy = self._check(db,ctx)
+            return self._read_record(db,ctx,policy,key,revision,action='host.read')
 
     def read_many(self,ctx,requests):
         with self.lock, self.db.transaction() as db:
-            self._check(db,ctx)
+            # One check per transaction: the policy cannot change inside it, and each item below is checked itself.
+            policy = self._check(db,ctx)
             # No successful-read receipt survives if any requested item fails.
-            return [self._read_record(db,ctx,v['id'],v.get('revision'),v.get('start'),v.get('max_chars')) for v in requests]
+            return [self._read_record(db,ctx,policy,v['id'],v.get('revision'),v.get('start'),v.get('max_chars')) for v in requests]
 
-    def _read_record(self,db,ctx,key,revision=None,start=None,max_chars=None,action='document.read'):
-        policy = self._check(db, ctx)
+    def _read_record(self,db,ctx,policy,key,revision=None,start=None,max_chars=None,action='document.read'):
         row, resource = self._document(db, key)
         policy.require_read(ctx, resource)
         data = self.version_bytes(db, row, revision)
