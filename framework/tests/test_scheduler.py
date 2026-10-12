@@ -122,6 +122,20 @@ class SchedulerTests(unittest.TestCase):
         self.assertNotIn('<<<用户原消息开始>>>', prompt)
         self.assertNotIn('message.prefetched', self.reads(task)[1])
 
+    def test_prefetch_can_apply_to_all_scopes(self):
+        self.api.rules.features = {'prefetch_message': {'scopes': 'all'}}
+        task = self.event_text('pf-all', 'synthetic work')['task']
+        self.assertEqual(self.scheduler.start_one(), task)
+        self.assertIn('<<<用户原消息开始>>>', self.launched[-1]['prompt'])
+        self.assertIn('message.prefetched', self.reads(task)[1])
+
+    def test_an_empty_scope_list_turns_prefetch_off(self):
+        self.api.rules.features = {'prefetch_message': {'scopes': []}}
+        task = self.event_text('pf-none', 'synthetic work')['task']
+        self.assertEqual(self.scheduler.start_one(), task)
+        self.assertNotIn('<<<用户原消息开始>>>', self.launched[-1]['prompt'])
+        self.assertEqual(self.reads(task), ([], []))
+
     def test_prefetch_only_applies_to_configured_scopes(self):
         self.api.rules.features = {'prefetch_message': {'scopes': ['someone-else']}}
         task = self.event_text('pf-other', 'synthetic work')['task']

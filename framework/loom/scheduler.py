@@ -187,12 +187,14 @@ class Scheduler:
     PREFETCH_MAX_CHARS = 4000
 
     def prefetch_message(self, ctx, resource):
-        """Optional (controller.json prefetch_message {scopes:[...]}, default off): read a SHORT, complete current message on the model's behalf
-        through the very same read path, so the usual task_reads/document.read records exist and the model saves one tool round trip.
-        Returns the text, or None to fall back to the model reading it.  Never raises."""
+        """controller.json prefetch_message {scopes: [...] | "all"}; production wiring defaults to "all", {scopes: []} turns it off.
+        Reads a SHORT, complete current message on the model's behalf through the very same read path, so the usual
+        task_reads/document.read records exist (the text is placed in the model's prompt) and the model saves one tool
+        round trip.  Returns the text, or None to fall back to the model reading it.  Never raises."""
         try:
             config = (getattr(self.api.rules, 'features', None) or {}).get('prefetch_message') or {}
-            if ctx.scope not in (config.get('scopes') or []):
+            scopes = config.get('scopes') or []
+            if scopes != 'all' and ctx.scope not in scopes:
                 return None
             got = self.c.read(ctx, resource, None, 0, self.PREFETCH_MAX_CHARS)
             if not got.get('full_text') or not isinstance(got.get('text'), str):
