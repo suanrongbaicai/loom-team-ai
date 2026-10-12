@@ -145,7 +145,7 @@ def main():
                             contacts=contacts,
                             accepted_chats=config.get('accepted_chats'), groups=GroupAdmission(c, membership, basic), reactor=clients, basic=basic,
                             features={'group_all_messages': bool(config.get('group_all_messages')), 'on_demand_skills': config.get('on_demand_skills'),
-                                      'prefetch_message': config.get('prefetch_message'), 'conversation_flow': config.get('conversation_flow'), 'max_parallel': config.get('max_parallel'),
+                                      'prefetch_message': config.get('prefetch_message', {'scopes': 'all'}), 'conversation_flow': config.get('conversation_flow'), 'max_parallel': config.get('max_parallel'),
                                        'bot_identities': config.get('bot_identities')},
                             personnel_notices=config.get('personnel_notices'))
         # This gate is distinct from real-time group event subscription and introductions.
