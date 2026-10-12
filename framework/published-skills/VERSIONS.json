@@ -60,9 +60,16 @@
     {
       "skill": "loom-work-records",
       "version": "v11-knowledge-kinds",
-      "framework_identical": true,
+      "framework_identical": false,
       "registered_digest_verified": false,
       "replaces": "v10-navigation-links"
+    },
+    {
+      "skill": "loom-work-records",
+      "version": "v12-correction-flow",
+      "framework_identical": true,
+      "registered_digest_verified": false,
+      "replaces": "v11-knowledge-kinds"
     },
     {
       "skill": "antv-g2-chart",
