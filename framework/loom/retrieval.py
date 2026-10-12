@@ -121,10 +121,13 @@ class Index:
 
 
 def source_rows(c, db, policy, ctx, kinds=None):
+    audience = policy.recipients(ctx)              # once per call, not once per document
     result = []
     for row in db.execute('SELECT * FROM documents WHERE revision>0 ORDER BY id'):
+        if kinds and row['kind'] not in kinds:
+            continue
         resource = Resource(row['id'],row['owner'],row['scope'],row['kind'],row['created'],tuple(json.loads(row['audience'])))
-        if policy.can_read(ctx, resource) and (not kinds or row['kind'] in kinds):
+        if policy.can_read(ctx, resource, audience):
             result.append(row)
     return result
 
@@ -248,9 +251,10 @@ def objects(c,ctx,query=None,limit=30,offset=0,snapshot=None):
     if query is not None and (not isinstance(query,str) or not query.strip() or len(query)>256):
         raise ValueError('Invalid object query')
     with c.lock,c.db.transaction() as db:
-        policy=c._check(db,ctx);rows=source_rows(c,db,policy,ctx,['context'])
+        policy=c._check(db,ctx);readable=source_rows(c,db,policy,ctx)
+        rows=[r for r in readable if r['kind']=='context']
         snap=page_check(rows,ctx,{'objects':query},offset,snapshot)
-        available={r['id'] for r in source_rows(c,db,policy,ctx)}
+        available={r['id'] for r in readable}
         entries=[];unregistered=0
         for row in rows:
             text=c._read(db,row).decode();item=metadata(text)
