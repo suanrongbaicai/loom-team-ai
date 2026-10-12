@@ -12,10 +12,16 @@ class Rules:
         self.c = control
         self.framework = Path(framework)
 
+    # Heavy skills a turn rarely needs; production wiring sends them as one-line stubs unless controller.json says otherwise.
+    DEFAULT_ON_DEMAND = ('antv-gpt-vis', 'antv-g2-chart', 'loom-reports', 'loom-wechat', 'loom-business',
+                         'loom-customer-profile', 'loom-capabilities')
+
     def on_demand(self, scope, key):
-        """Configured per scope and skill (controller.json on_demand_skills {scopes, skills}); absent or empty means everything loads in full."""
+        """controller.json on_demand_skills {scopes: [...] | "all", skills: [...]}; absent here means everything loads in full
+        (production wiring supplies DEFAULT_ON_DEMAND for all scopes)."""
         cfg = self.features.get('on_demand_skills') or {}
-        return scope in (cfg.get('scopes') or []) and key in (cfg.get('skills') or [])
+        scopes = cfg.get('scopes') or []
+        return (scopes == 'all' or scope in scopes) and key in (cfg.get('skills') or [])
 
     @staticmethod
     def stub(skill):
