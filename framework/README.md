@@ -57,7 +57,7 @@ Windows 部署需要已验证的普通工作账号、其专属工作区、官方
 
 遇到本地网络的 WebSocket TLS 故障，可由管理运行配置 `runtime.model_http_only=true` 选择同一官方登录和模型的 HTTP 传输。`runtime.model_catalog_json` 可指向与已部署 Codex 版本一致、经核验的官方模型目录，避免每轮重复超时刷新；随模型或 Codex 升级同步更新，不改变模型名称、推理级别、权限或采购方式。这些是可选部署配置，不是团队行为要求。
 
-本机维护面板可由 `tools/build-panel.ps1 -Output <绝对exe路径>` 使用现有Windows .NET Framework编译。启动参数为团队独立JSON配置，字段为python、bridge（panel_bridge.py绝对路径）、work_dir、database（现有runtime.sqlite）及tasks（已有计划任务名数组）。面板无网络监听，不向Bot暴露工具，不改权限或模型。状态按打开/手动刷新读取，只启动已配置且Ready的未运行服务；不会重启运行中服务或重发unknown消息。维护命令限本机管理员，60秒/512MiB进程树/64KiB输出，取消或父入口退出清理普通后代；这属于防资源失控，不是对恶意管理员的隔离。运行目录及配置应继承现有受保护控制根ACL，源码/配置/真实资料分别交付。
+本机维护面板是 `tools/panel_web.py`：只在 127.0.0.1 上提供一个本地页面，查看服务、内存和回复耗时，启动已停止的服务，发起 U 盘备份，并调整成员状态与模型设置。启动参数为团队独立 JSON 配置，字段为 work_dir、database（现有 runtime.sqlite）及 tasks（已有计划任务名数组）。不向 Bot 暴露工具；只启动已配置且未运行的服务，不重发 unknown 消息；不提供任意命令执行。运行目录及配置应继承现有受保护控制根 ACL。
 
 能力接续由 `controller.json.capabilities` 显式启用：`enabled`、工程批准依据 `approval`、非C盘受保护目录 `projects_root/tools_root`、按已核验成员配置的 `rules`。每条规则包含 `active/approval/scopes/approver/grants`，可选 `expires_at`；首版只接受当前真实成员批准自己的已登记范围，不能由模型指定审批人、变更配置或代替其他成员授权。具体配置、账号映射及批准原件留在团队部署，不放通用包。
 

@@ -1,7 +1,5 @@
-"""Local operator panel helper. No network listener or model-facing API.
-
-Job limits prevent accidental runaway maintenance commands; they are NOT an
-authorization sandbox for untrusted code. Existing Bot isolation is unchanged.
+"""Local operator panel helper used by panel_web.py: service status, starting stopped services and USB backup.
+No network listener, no model-facing API and no general command runner. Existing Bot isolation is unchanged.
 """
 import base64
 import ctypes
@@ -11,87 +9,25 @@ from pathlib import Path
 import sqlite3
 import subprocess
 import sys
-import threading
 import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 
-def bounded(argv, cwd, timeout=60, max_output=65536, memory=512*1024*1024):
-    from loom import appcontainer as win
-    job = win.check(win.create_job(None, None), 'create maintenance job')
-    proc = None
-    chunks, total, overflow = [], [0], threading.Event()
-    try:
-        limits = win.ExtendedLimits()
-        limits.basic.flags = 0x2000 | 0x200 | 0x8
-        limits.basic.active_process_limit = 12
-        limits.job_memory = memory
-        win.check(win.set_job(job, 9, win.C.byref(limits), win.C.sizeof(limits)), 'bound maintenance job')
-        # This fixed child waits before executing the requested command.
-        proc = subprocess.Popen([sys.executable, '-B', '-X', 'utf8', __file__, '--child'],
-            cwd=cwd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT, creationflags=subprocess.CREATE_NO_WINDOW)
-        win.check(win.assign_job(job, int(proc._handle)), 'assign maintenance child')
-        def drain():
-            while True:
-                part = proc.stdout.read1(4096)
-                if not part:
-                    return
-                keep = max(0, max_output-total[0])
-                chunks.append(part[:keep]) if keep else None
-                total[0] += len(part)
-                if total[0] > max_output:
-                    overflow.set()
-                    return
-        reader = threading.Thread(target=drain, daemon=True)
-        reader.start()
-        proc.stdin.write((json.dumps(argv)+'\n').encode())
-        proc.stdin.close()
-        start, reason = time.monotonic(), 'finished'
-        while proc.poll() is None:
-            if overflow.is_set():
-                reason = 'output_limit'; break
-            if time.monotonic()-start > timeout:
-                reason = 'timeout'; break
-            time.sleep(.05)
-        win.check(win.terminate_job(job, 1), 'clean maintenance descendants')
-        proc.wait(timeout=5)
-        reader.join(timeout=5)
-        if reader.is_alive():
-            raise RuntimeError('maintenance output cleanup incomplete')
-        accounting = win.C.create_string_buffer(48)
-        deadline = time.monotonic()+5
-        while True:
-            win.check(win.query_job(job, 1, accounting, 48, None), 'verify maintenance cleanup')
-            if int.from_bytes(accounting.raw[40:44], 'little') == 0:
-                break
-            if time.monotonic() > deadline:
-                raise RuntimeError('maintenance processes remain')
-            time.sleep(.05)
-        if overflow.is_set():
-            reason = 'output_limit'
-        return {'state': reason, 'exit': proc.returncode,
-            'seconds': round(time.monotonic()-start, 2),
-            'output': b''.join(chunks).decode('utf-8', errors='replace'),
-            'cleanup_confirmed': True}
-    finally:
-        win.terminate_job(job, 1)
-        if proc is not None:
-            if proc.poll() is None:
-                proc.kill()
-            proc.wait(timeout=5)
-            for pipe in (proc.stdin, proc.stdout):
-                if pipe and not pipe.closed:
-                    pipe.close()
-        win.close(job)
-
-
-def powershell(script, cwd, timeout=60):
+def powershell(script, cwd, timeout=60, max_output=65536):
+    """Run one of this module's fixed status/start scripts. Not a general command runner."""
     prefix = "$ProgressPreference='SilentlyContinue';[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false);$ErrorActionPreference='Stop';"
     encoded = base64.b64encode((prefix+script).encode('utf-16le')).decode()
-    return bounded([str(Path(os.environ['SystemRoot'])/'System32/WindowsPowerShell/v1.0/powershell.exe'),
-        '-NoProfile', '-NonInteractive', '-OutputFormat', 'Text', '-EncodedCommand', encoded], cwd, timeout)
+    argv = [str(Path(os.environ['SystemRoot'])/'System32/WindowsPowerShell/v1.0/powershell.exe'),
+            '-NoProfile', '-NonInteractive', '-OutputFormat', 'Text', '-EncodedCommand', encoded]
+    start = time.monotonic()
+    try:
+        done = subprocess.run(argv, cwd=cwd, stdin=subprocess.DEVNULL, capture_output=True, timeout=timeout,
+                              creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+    except subprocess.TimeoutExpired:
+        return {'state': 'timeout', 'exit': None, 'seconds': round(time.monotonic()-start, 2), 'output': ''}
+    return {'state': 'finished', 'exit': done.returncode, 'seconds': round(time.monotonic()-start, 2),
+            'output': done.stdout[:max_output].decode('utf-8', errors='replace')}
 
 
 def status(cfg):
@@ -165,42 +101,3 @@ def usb_export(cfg, drive, run=None, spawn=None, now=time.time):
 def spawn_detached(argv, cwd):
     flags = getattr(subprocess, 'DETACHED_PROCESS', 0) | getattr(subprocess, 'CREATE_NEW_PROCESS_GROUP', 0) | getattr(subprocess, 'CREATE_NO_WINDOW', 0)
     subprocess.Popen(argv, cwd=cwd, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=flags, close_fds=True)
-
-
-def main():
-    if sys.argv[1:] == ['--child']:
-        argv = json.loads(sys.stdin.buffer.readline(32768))
-        raise SystemExit(subprocess.call(argv, stdin=subprocess.DEVNULL))
-    cfg = json.loads(Path(sys.argv[1]).read_text(encoding='utf-8-sig'))
-    action = sys.argv[2]
-    if action == 'status':
-        result = status(cfg)
-    elif action == 'start':
-        # Never restart a running task or rewrite scheduled-task configuration.
-        result = status(cfg)
-        stopped = [t['name'] for t in result['tasks'] if t['state'] == 3]
-        for name in stopped:
-            run = powershell("$s=New-Object -ComObject 'Schedule.Service';$s.Connect();$t=$s.GetFolder('\\').GetTask('"+name+"');if($t.State -eq 3){$null=$t.Run($null)}", cfg['work_dir'], 15)
-            if run['exit'] != 0 or run['state'] != 'finished':
-                raise RuntimeError('start failed: '+name)
-        result = {'started': stopped}
-    elif action == 'usb_scan':
-        result = usb_scan(cfg)
-    elif action == 'usb_export':
-        if not ctypes.windll.shell32.IsUserAnAdmin():
-            raise PermissionError('backup requires a local administrator')
-        result = usb_export(cfg, json.loads(sys.stdin.buffer.readline(4096))['drive'])
-    elif action == 'command':
-        if not ctypes.windll.shell32.IsUserAnAdmin():
-            raise PermissionError('maintenance requires a local administrator')
-        command = json.loads(sys.stdin.buffer.readline(32768))['command']
-        if not isinstance(command, str) or not 1 <= len(command) <= 8192:
-            raise ValueError('invalid command length')
-        result = powershell(command, cfg['work_dir'])
-    else:
-        raise ValueError('unknown panel action')
-    print(json.dumps(result, ensure_ascii=True))
-
-
-if __name__ == '__main__':
-    main()
