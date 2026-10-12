@@ -17,6 +17,9 @@ import subprocess
 import sys
 import time
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from loom.fsguard import is_link, sha_file as sha  # noqa: E402
+
 ALLOWED_DIRS = ('loom', 'rules', 'tools', 'templates', 'tests')
 ALLOWED_ROOT = ('README.md', 'THIRD_PARTY_NOTICES.md', 'pyproject.toml', 'requirements-feishu-win-py312.lock', 'sdk-download-manifest.json')
 SKIP_NAMES = {'__pycache__', '.test-work'}
@@ -25,24 +28,6 @@ DEFAULT_SERVICES = ('LOOM-Controller-OwnerWork', 'LOOM-Gateway-Member', 'LOOM-Ga
 
 class Refused(RuntimeError):
     pass
-
-
-def sha(path):
-    h = hashlib.sha256()
-    with open(path, 'rb') as stream:
-        for block in iter(lambda: stream.read(1 << 20), b''):
-            h.update(block)
-    return h.hexdigest()
-
-
-def is_link(path):
-    path = Path(path)
-    if path.is_symlink() or (hasattr(path, 'is_junction') and path.is_junction()):
-        return True
-    try:
-        return bool(getattr(os.lstat(path), 'st_file_attributes', 0) & 0x400)
-    except OSError:
-        return False
 
 
 def tree(root):

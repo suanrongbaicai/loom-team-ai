@@ -14,6 +14,9 @@ import shutil
 import sys
 import time
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from loom.fsguard import chain_link, is_link, sha_file as sha  # noqa: E402
+
 SRC = Path(__file__).resolve().parents[1]
 INCLUDE_DIRS = ('loom', 'rules', 'skills', 'tools', 'tests', 'licenses', 'templates')
 INCLUDE_FILES = ('README.md', 'THIRD_PARTY_NOTICES.md', 'pyproject.toml', 'requirements-feishu-win-py312.lock', 'sdk-download-manifest.json')
@@ -41,26 +44,6 @@ ALLOWED_CONTENT = {   # (relative path, rule) pairs that are deliberate: the sca
 }
 
 
-def is_link(path):
-    path = Path(path)
-    if path.is_symlink() or (hasattr(path, 'is_junction') and path.is_junction()):
-        return True
-    try:
-        return bool(getattr(os.lstat(path), 'st_file_attributes', 0) & 0x400)     # Windows reparse point
-    except OSError:
-        return False
-
-
-def chain_link(path):
-    path = Path(os.path.abspath(path))
-    current = Path(path.anchor)
-    for part in path.relative_to(path.anchor).parts:
-        current = current / part
-        if (current.exists() or current.is_symlink()) and is_link(current):
-            return str(current)
-    return None
-
-
 def decode(path):
     """Text of a file in any common encoding, or None when it is binary."""
     data = Path(path).read_bytes()
@@ -72,14 +55,6 @@ def decode(path):
         return data.decode('utf-8-sig')
     except UnicodeDecodeError:
         return None
-
-
-def sha(path):
-    h = hashlib.sha256()
-    with open(path, 'rb') as stream:
-        for block in iter(lambda: stream.read(1 << 20), b''):
-            h.update(block)
-    return h.hexdigest()
 
 
 def collect(root=SRC):

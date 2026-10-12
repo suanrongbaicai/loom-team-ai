@@ -21,6 +21,7 @@ import tempfile
 import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from loom.fsguard import is_link  # noqa: E402
 
 VERSION = 1
 DATA_DIRS = ('ActionRecovery', 'Artifacts', 'CommandRuns', 'Images', 'WeChatAttachments', 'WeChatAttachmentsV2',
@@ -33,16 +34,6 @@ CHUNK = 1 << 20
 
 class Refused(RuntimeError):
     pass
-
-
-def is_link(path):
-    path = Path(path)
-    if path.is_symlink() or (hasattr(path, 'is_junction') and path.is_junction()):
-        return True
-    try:
-        return bool(getattr(os.lstat(path), 'st_file_attributes', 0) & 0x400)
-    except OSError:
-        return False
 
 
 def sha_file(path):
