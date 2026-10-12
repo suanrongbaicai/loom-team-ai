@@ -156,6 +156,33 @@ TOOLS = [
 ]
 
 
+FEATURE_TOOLS = {
+    'group_history': ('group_history',),
+    'contacts': ('member_find', 'contact_private', 'contact_status'),
+    'generated_images': ('generated_images', 'image_reference', 'send_image', 'image_status'),
+    'public_web': ('web_search', 'web_read'),
+    'engineering': ('capability_catalog', 'capability_request', 'capability_status', 'capability_save',
+                    'capability_validate', 'capability_publish', 'capability_call', 'capability_fetch'),
+    'report_leaf': ('report_templates', 'report_view', 'report_build', 'report_publish', 'report_cloud_status',
+                    'report_import', 'cloud_copy'),
+    'commands': ('execute',),
+    'images': ('image', 'file'),
+    'wechat_attachments': ('wechat_attachment',),
+}
+GROUP_ONLY = ('group_history', 'set_group_alias')
+
+
+def available_tools(api, scope_kind):
+    """Tools this deployment and conversation can actually use. A tool whose feature is not provisioned would only
+    answer 'not connected', so it is not sent to the model; every call is still checked in RuntimeAPI.call."""
+    hidden = {name for feature, names in FEATURE_TOOLS.items() if getattr(api, feature, None) is None for name in names}
+    if getattr(getattr(api, 'wechat_capture', None), 'collector', None) is None:
+        hidden.update(('wechat_capture_request', 'wechat_capture'))
+    if scope_kind != 'group':
+        hidden.update(GROUP_ONLY)
+    return [t for t in TOOLS if t['name'] not in hidden]
+
+
 def handle(request, invoke=call):
     if 'id' not in request:
         return None
