@@ -122,6 +122,17 @@ class SchedulerTests(unittest.TestCase):
         self.assertNotIn('<<<用户原消息开始>>>', prompt)
         self.assertNotIn('message.prefetched', self.reads(task)[1])
 
+    def test_fixed_guidance_comes_before_the_per_task_part(self):
+        task = self.event_text('order-1', 'synthetic work')['task']
+        self.assertEqual(self.scheduler.start_one(), task)
+        prompt = self.launched[-1]['prompt']
+        fixed = prompt.index('确认本轮请求后采用适用的接引/记录技能')
+        this_task = prompt.index('本轮任务：处理已核验入站任务。')
+        self.assertLess(fixed, this_task)
+        self.assertLess(prompt.index('做事通则'), this_task)
+        self.assertGreater(prompt.index('本任务工作目录是'), this_task)
+        self.assertTrue(prompt.rstrip().endswith('。'))
+
     def test_prefetch_can_apply_to_all_scopes(self):
         self.api.rules.features = {'prefetch_message': {'scopes': 'all'}}
         task = self.event_text('pf-all', 'synthetic work')['task']
