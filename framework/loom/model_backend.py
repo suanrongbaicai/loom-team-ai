@@ -154,6 +154,10 @@ class Host:
             if not api.call(run.token, 'preflight', {}).get('complete'):
                 raise Denied('Full rules preflight incomplete')
             rules = api.rules.load(ctx, 'UserPromptSubmit')
+            # Fixed blocks go before the per-task JSON that closes the rules text, so that prefix stays identical.
+            fixed = ('本宿主通过官方动态工具接口提供 LOOM：实际函数名是 loom_ 加短名，如 loom_read、loom_read_many、loom_save_work、loom_reply。'
+                     '旧说明中的 loom.read 或 mcp__loom__read 在本宿主调用 loom_read；其余短名同样映射。参数与规则不变。'
+                     '本对话没有原生执行环境；文件和命令操作通过本任务授权的 LOOM 工具完成，命令使用 loom_execute。')
             images = getattr(api, 'generated_images', None)
             if images:
                 try:
@@ -162,7 +166,10 @@ class Host:
                     pass
                 else:
                     from .generated_images import INSTRUCTIONS
-                    rules += '\n' + INSTRUCTIONS
+                    fixed = INSTRUCTIONS + '\n' + fixed
+            marker = '\n\n## trusted current task\n'
+            head, found, tail = rules.rpartition(marker)
+            rules = (head + '\n\n' + fixed + found + tail) if found else (rules + '\n' + fixed)
             # Serialize only host creation. RPCs and model turns remain concurrent.
             with self.start_lock:
                 self._start(run.job)
@@ -192,10 +199,7 @@ class Host:
             started = self.client.rpc('thread/start', {'ephemeral': True, 'environments': [],
                 'cwd': run.job['workspace'], 'allowProviderModelFallback': False,
                 'permissions': 'loom-task', 'approvalPolicy': 'never', 'config': config,
-                'model': run.job['model'], 'developerInstructions': rules +
-                '\n本宿主通过官方动态工具接口提供 LOOM：实际函数名是 loom_ 加短名，如 loom_read、loom_read_many、loom_save_work、loom_reply。'
-                '旧说明中的 loom.read 或 mcp__loom__read 在本宿主调用 loom_read；其余短名同样映射。参数与规则不变。'
-                '本对话没有原生执行环境；文件和命令操作通过本任务授权的 LOOM 工具完成，命令使用 loom_execute。',
+                'model': run.job['model'], 'developerInstructions': rules,
                 'dynamicTools': tools})
             if started['model'] != run.job['model']:
                 raise Denied('Requested model was not preserved')

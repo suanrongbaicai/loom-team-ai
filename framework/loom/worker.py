@@ -72,11 +72,12 @@ def make_job(ctx, token, runtime, scope, prompt):
                         'PYTHONPATH': runtime['framework'], 'PYTHONUTF8': '1',
                         'HTTP_PROXY': runtime.get('proxy', ''), 'HTTPS_PROXY': runtime.get('proxy', ''),
                         'NO_PROXY': '127.0.0.1,localhost', 'PYTHONDONTWRITEBYTECODE': '1'})
-    prompt = ('可信运行环境说明：本任务工作目录是 ' + str(workspace) + '。'
-              '命令只通过 loom.execute 执行。执行器已创建 LOOMWork 驱动器，并将 PowerShell 位置与 '
+    # Fixed text first, this task's workspace path last (see the scheduler's prompt order).
+    prompt = ('可信运行环境说明：命令只通过 loom.execute 执行。执行器已创建 LOOMWork 驱动器，并将 PowerShell 位置与 '
               '[Environment]::CurrentDirectory 设置到本任务工作区；不要重复创建 LOOMWork。'
               '文件工具使用本任务工作区的绝对路径。不要往 C 盘写入或通过放宽权限处理目录错误。'
-              '工作资料经 LOOM 工具按当前授权查取，不读取其他任务临时文件。\n\n' + prompt)
+              '工作资料经 LOOM 工具按当前授权查取，不读取其他任务临时文件。\n\n' + prompt
+              + '\n本任务工作目录是 ' + str(workspace) + '。')
     return {'id': ctx.task, 'os_account': scope['os_account'], 'worker_home': str(home),
             'workspace': str(workspace), 'output_dir': str(home / 'Outputs' / ctx.task),
             'environment': environment, 'argv': command(runtime, workspace, home, temporary,
