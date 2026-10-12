@@ -371,8 +371,10 @@ class Host:
         args = params.get('arguments')
         if not isinstance(args, dict):
             raise Denied('Invalid tool arguments')
-        ctx = self.pool.api.context(run.token)
-        self.pool.api.rules.load(ctx, 'PreToolUse', run.thread)
+        # A revoked or stale credential fails the host request itself. There is no full rules rebuild per tool call:
+        # the text was verified and delivered once at task start, and api.call below re-checks the credential,
+        # audience, task binding, adopted methods and everything read, as the CLI PreToolUse 'guard' does.
+        self.pool.api.context(run.token)
         result = handle_mcp({'jsonrpc': '2.0', 'id': 1, 'method': 'tools/call',
             'params': {'name': allowed[tool], 'arguments': args}},
             lambda name, arguments: self.pool.api.call(run.token, name, arguments))['result']
