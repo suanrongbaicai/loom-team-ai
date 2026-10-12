@@ -71,9 +71,11 @@ class Sender:
             if not out:
                 raise Denied('Unknown saved reply')
             scope_id, original_task = out['scope'], out['task']
+        # Verified before taking the lock: the check may call the platform. begin_send below re-checks the verified,
+        # unexpired audience under the lock, so a change in between still stops this send.
+        if self.verify_audience(scope_id) is not True:
+            raise Denied('Current audience could not be verified')
         with self.c.lock:
-            if self.verify_audience(scope_id) is not True:
-                raise Denied('Current audience could not be verified')
             with self.c.db.transaction() as db:
                 config = self.c.policy(db).state['scopes'][scope_id].get('transport', {})
                 apps = config.get('apps', [])
@@ -109,17 +111,17 @@ class Sender:
         try:
             if image:
                 def image_current():
+                    if self.verify_audience(scope_id) is not True:
+                        raise Denied('图片上传时会话成员发生变化。')
                     with self.c.lock:
-                        if self.verify_audience(scope_id) is not True:
-                            raise Denied('图片上传时会话成员发生变化。')
                         self.images.for_outbox(oid)
                     return True
                 receipt = self.transports[app].send_image(app, chat, oid, image['data'], image_current)
             elif attachment:
                 def still_current():
+                    if self.verify_audience(scope_id) is not True:
+                        raise Denied('Audience changed during file upload')
                     with self.c.lock:
-                        if self.verify_audience(scope_id) is not True:
-                            raise Denied('Audience changed during file upload')
                         Reports(self.c).for_outbox(oid)
                     return True
                 receipt = self.transports[app].send_file(app, chat, oid, attachment['filename'], attachment['data'], still_current)

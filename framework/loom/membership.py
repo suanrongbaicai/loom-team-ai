@@ -193,16 +193,23 @@ class Membership:
                 app = apps[0]
                 expected = set(scope['participants'])
             auto = scope.get('auto_admitted') is True
-            try:
-                # A group the bot was simply added to is judged by the tenant-wide person id, so it does not matter which
-                # of our applications each member happens to be talking to.
-                actual = self.clients[app].members(binding['chat'], 'union_id' if auto else 'open_id')
-            except Exception as error:
-                # Platform or network failure: the audience is unknown, not changed. Suspend only this scope;
-                # recipients() refuses an unverified scope, so its reads, tasks and queued replies stop until a fresh
-                # verification, while every other scope keeps its authorization epoch.
+        try:
+            # The platform call runs without the controller lock, so other tasks are not held up by the network. The
+            # result is only used under the lock below, after confirming the policy epoch it was compared against.
+            # A group the bot was simply added to is judged by the tenant-wide person id, so it does not matter which
+            # of our applications each member happens to be talking to.
+            actual = self.clients[app].members(binding['chat'], 'union_id' if auto else 'open_id')
+        except Exception as error:
+            # Platform or network failure: the audience is unknown, not changed. Suspend only this scope;
+            # recipients() refuses an unverified scope, so its reads, tasks and queued replies stop until a fresh
+            # verification, while every other scope keeps its authorization epoch.
+            with self.c.lock:
                 self._suspend(scope_id, type(error).__name__)
-                raise AudienceUnavailable('Current group audience could not be verified') from None
+            raise AudienceUnavailable('Current group audience could not be verified') from None
+        with self.c.lock:
+            with self.c.db.transaction() as db:
+                if self.c.policy(db).epoch != policy.epoch:
+                    raise AudienceUnavailable('Policy changed during audience verification')
             try:
                 observed = set()
                 for member in actual:
