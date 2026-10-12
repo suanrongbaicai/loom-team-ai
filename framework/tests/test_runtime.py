@@ -256,6 +256,21 @@ class RuntimeTests(unittest.TestCase):
         again = self.api.rules.load(self.ctx, 'PostCompact', 'session1')   # after a compaction the already-read skill is restored in full
         self.assertIn(full[:200], again)
 
+    def test_on_demand_can_apply_to_all_scopes(self):
+        self.install_rules()
+        self.api.rules.features = {'on_demand_skills': {'scopes': 'all', 'skills': ['loom-onboard']}}
+        text = self.api.rules.load(self.ctx, 'UserPromptSubmit', 'session1')
+        self.assertIn('loom-onboard@v1 (on demand)', text)
+        self.assertIn('loom-work-records@v1', text)
+
+    def test_the_production_default_stubs_only_heavy_skills(self):
+        from loom.rules import Rules
+        self.assertNotIn('loom-work-records', Rules.DEFAULT_ON_DEMAND)
+        self.assertNotIn('loom-onboard', Rules.DEFAULT_ON_DEMAND)
+        self.assertNotIn('loom-people', Rules.DEFAULT_ON_DEMAND)
+        source = Path('tools/controller_entry.py').read_text(encoding='utf-8')
+        self.assertIn("config.get('on_demand_skills', {'scopes': 'all', 'skills': list(Rules.DEFAULT_ON_DEMAND)})", source)
+
     def test_skill_read_refuses_a_skill_that_is_not_deployed_for_the_scope(self):
         self.install_rules()
         with self.assertRaises(Exception):

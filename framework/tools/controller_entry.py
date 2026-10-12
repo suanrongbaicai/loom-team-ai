@@ -14,6 +14,7 @@ from loom.commands import Commands
 from loom.instance import InstanceLock
 from loom.membership import FeishuAPI, Membership
 from loom.rpc import RuntimeAPI, serve
+from loom.rules import Rules
 from loom.scheduler import Scheduler
 from loom.transport import LocalTransport, Sender
 from loom.gateway import FeishuTransport
@@ -144,7 +145,7 @@ def main():
                             public_web=public_web,
                             contacts=contacts,
                             accepted_chats=config.get('accepted_chats'), groups=GroupAdmission(c, membership, basic), reactor=clients, basic=basic,
-                            features={'group_all_messages': bool(config.get('group_all_messages')), 'on_demand_skills': config.get('on_demand_skills'),
+                            features={'group_all_messages': bool(config.get('group_all_messages')), 'on_demand_skills': config.get('on_demand_skills', {'scopes': 'all', 'skills': list(Rules.DEFAULT_ON_DEMAND)}),
                                       'prefetch_message': config.get('prefetch_message', {'scopes': 'all'}), 'conversation_flow': config.get('conversation_flow'), 'max_parallel': config.get('max_parallel'),
                                        'bot_identities': config.get('bot_identities')},
                             personnel_notices=config.get('personnel_notices'))
