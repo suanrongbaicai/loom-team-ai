@@ -123,8 +123,7 @@ def review(control, ctx, declaration, reply):
             else:
                 control._check(db, ctx, True)
         if not previous:
-            control.register(ctx, key, 'data')
-            control.commit(ctx, key, 0, text, key, control.lease(ctx, key))
+            control.save_data(ctx, key, text)
         # Link saved exact response and its layer decisions from the formal
         # business journal. This is a receipt, not a semantic summary.
         for event in events:
@@ -197,6 +196,7 @@ def deliver(control, ctx, text, key, declaration, finish=False, prepare=None):
         # Check mechanical stage mistakes before reserving a reply or attachment.
         # The full adoption/version/audience review still runs below.
         prior = None
+        footer_declaration = declaration
         if declaration.get('stage'):
             from .stages import expand
             with control.db.transaction() as db:
@@ -205,19 +205,9 @@ def deliver(control, ctx, text, key, declaration, finish=False, prepare=None):
                               ('recording-' + digest((ctx.task+':'+old_reply['id']).encode()),)).fetchone()
                               if old_reply else None)
                 prior = json.loads(control._read(db, old_record)) if old_record else None
-                expand(control, ctx, db, declaration, prior)
+                footer_declaration, _ = expand(control, ctx, db, declaration, prior)
         if prepare is None:
             from .public_web import source_footer
-            footer_declaration = declaration
-            if declaration.get('stage'):
-                from .stages import expand
-                with control.db.transaction() as db:
-                    old_reply = db.execute('SELECT id FROM commits WHERE document=? AND task=?', (key, ctx.task)).fetchone()
-                    old_record = (db.execute('SELECT * FROM documents WHERE id=?',
-                                  ('recording-' + digest((ctx.task+':'+old_reply['id']).encode()),)).fetchone()
-                                  if old_reply else None)
-                    prior = json.loads(control._read(db, old_record)) if old_record else None
-                    footer_declaration, _ = expand(control, ctx, db, declaration, prior)
             text=source_footer(control,ctx,text,footer_declaration)
         saved = control.save_reply(ctx, text, key)
         # Existing attachment flows retain their order. Native images explicitly

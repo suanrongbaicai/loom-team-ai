@@ -291,6 +291,11 @@ class Control:
                        (key, ctx.principal, ctx.scope, kind, utcnow(), f'{folder}/{key}.md', json.dumps(sorted(policy.recipients(ctx)))))
             return key
 
+    def save_data(self, ctx, key, text):
+        """Store a Data original using its document ID as the commit ID."""
+        self.register(ctx, key, 'data')
+        return self.commit(ctx, key, 0, text, key, self.lease(ctx, key))
+
     def lease(self, ctx, key, take_over=False):
         with self.lock, self.db.transaction() as db:
             policy = self._check(db, ctx, True)

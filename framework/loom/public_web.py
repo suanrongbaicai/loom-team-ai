@@ -121,8 +121,7 @@ class PublicWeb:
                 db.execute('INSERT INTO web_requests VALUES(?,?,?,?,?,?,?)',(key,ctx.task,ctx.scope,ctx.principal,encoded,'reading','{}'))
         # Reading writes its own audit receipt; release the transaction first.
         if row:return self.result(ctx,key)
-        source=key+'-request';self.c.register(ctx,source,'data')
-        self.c.commit(ctx,source,0,encoded,source,self.c.lease(ctx,source))
+        source=key+'-request';self.c.save_data(ctx,source,encoded)
         with self.c.db.transaction() as db:
             self.c.audit(db,ctx.principal,ctx.task,'web.requested',{'id':key,'operation':operation,'request':source,'library':library})
         original=None

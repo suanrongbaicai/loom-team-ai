@@ -39,6 +39,13 @@ def excerpt_was_read(db, task, key, revision, start, end):
     return False
 
 
+def unique_excerpt(body, excerpt, message):
+    """Locate a bounded, unique quote; retain the caller's exact error text."""
+    if not isinstance(excerpt,str) or not excerpt or len(excerpt)>8000 or body.count(excerpt)!=1:
+        raise Denied(message)
+    return body.index(excerpt)
+
+
 def read_ids_hint(db, task, key):
     """After a mistyped/pasted-together record id: list ids THIS task actually read (it already knows them). Says nothing
     about whether the wrong id exists or who may see it."""
@@ -77,9 +84,8 @@ def passage(c, ctx, event, base, text, commit_id, citations, take_over=False):
                 if revision not in read_versions(db,ctx.task,key):
                     raise Denied('引用版本须在本轮实际读取；先用 read(id,revision) 核对。')
                 raw=c.version_bytes(db,row,revision);body=raw.decode()
-                if not isinstance(excerpt,str) or not excerpt or len(excerpt)>8000 or body.count(excerpt)!=1:
-                    raise Denied('引用段落须唯一匹配已读原文；提供足以定位的短原文。')
-                begin=body.index(excerpt);start=body[:begin].count('\n')+1
+                begin=unique_excerpt(body,excerpt,'引用段落须唯一匹配已读原文；提供足以定位的短原文。')
+                start=body[:begin].count('\n')+1
                 if not excerpt_was_read(db,ctx.task,key,revision,begin,begin+len(excerpt)):
                     raise Denied('该原文片段尚未实际读到；搜索和分段读取不代表读完全文，请补读所需范围。')
                 end=start+excerpt.count('\n')
