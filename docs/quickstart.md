@@ -45,18 +45,4 @@ python tools/run_tests.py --quick
 
 它检查身份/资料边界、记录与发送、bot/共享模型资源的并发条件、共享开关、链接与凭据守卫，以及这个演示。运行器拒绝外部 socket 连接，只允许本地测试接口。
 
-## 4. 看现有维护页
-
-```sh
-python framework/tools/panel_web.py serve --demo --port 18753
-```
-
-浏览器打开 `http://127.0.0.1:18753/`，看概览和成员页。这里使用合成人员、模拟服务和示例模型名，按钮不会启动真实服务、调用模型或执行真实备份。看完按 Ctrl+C 关闭这个命令。
-
-![本地模拟概览](images/demo-overview.png)
-
-![本地模拟成员页](images/demo-members.png)
-
-这是现有维护页的实际截图，不是准备中的新控制台设计。截图全部来自 `--demo`；其中资源、模型和服务状态为模拟值。
-
 接真实平台前，请继续读 [共享策略](sharing.md)、[当前限制](status.md) 和 `framework/factory/` 的空模板。配置身份、范围与凭据之后仍须独立验收。
