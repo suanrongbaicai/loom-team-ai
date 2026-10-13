@@ -64,13 +64,14 @@ class Projects:
         for dep in spec['dependencies']:
             guard();self.checked(ctx,request)
             path=within(self.root,'Dependencies/'+dep['sha256']+'.whl')
-            if path.exists():raw=path.read_bytes()
+            if path.exists():
+                raw=path.read_bytes()
+                entries=wheel_files(raw,dep['sha256'])
             else:
                 raw,_=fetch({'url':dep['url'],'method':'GET'},guard,16*1024*1024)
-                wheel_files(raw,dep['sha256'])
+                entries=wheel_files(raw,dep['sha256'])
                 with self.c.lock:
                     if not path.exists():write_durable(path,raw)
-            entries=wheel_files(raw,dep['sha256'])
             for name,raw in entries.items():
                 key='deps/'+name
                 if key.casefold() in {k.casefold() for k in result}:raise Denied('依赖文件冲突，未自动覆盖。')

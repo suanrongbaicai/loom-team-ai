@@ -215,7 +215,6 @@ def run(name, argv, cwd, env, output=None, timeout=120, cancelled=lambda: False,
         raise RuntimeError('Commands must be hosted by an ordinary Windows account')
     sid, size, pi = P(), SIZE(), ProcessInfo()
     job, attributes = None, None
-    station, desktop = None, None
     created = initialized = assigned = False
     files, fds, inherited_handles, readers = [], [], [], []
     chunks, output_size = [bytearray(), bytearray()], [0]
@@ -351,10 +350,6 @@ def run(name, argv, cwd, env, output=None, timeout=120, cancelled=lambda: False,
         for handle in (pi.thread,pi.process,job):
             if handle:
                 close(handle)
-        if desktop and not close_desktop(desktop):
-            result['errors'].append('private desktop handle close failed')
-        if station and not close_station(station):
-            result['errors'].append('private station handle close failed')
         for fd in fds:
             os.close(fd)
         for file in files:
