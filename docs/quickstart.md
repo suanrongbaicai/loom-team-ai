@@ -1,6 +1,6 @@
-# 几分钟本地最小示例
+# 本地合成演示
 
-我建议先跑这个，再接真实平台。需要 Python 3.12 或更新版本；最小演示只用标准库，不安装飞书 SDK，也不用模型账号。下面是标准 Python 命令；Windows 也可以把 `python` 换成 `py -3`。离线演示、核心检查和完整测试已在 Windows 与 Linux 验证，结果见 [测试说明](testing.md)。
+这是一个不联网的合成演示，用来看三层记录、跨任务读取、共享开关，以及发送状态不明时拒绝重发。需要 Python 3.12 或更新版本；最小演示只用标准库，不安装飞书 SDK，也不用模型账号。下面是标准 Python 命令；Windows 也可以把 `python` 换成 `py -3`。离线演示、核心检查和完整测试已在 Windows 与 Linux 验证，结果见 [测试说明](testing.md)。
 
 ## 1. 拿到代码
 
@@ -37,12 +37,4 @@ python examples/local_demo.py --output .demo-work/first-run
 
 `demo-result.json` 是演示摘要；实际原件和档案在成员目录，SQLite 在 `control/`。这些文件已被 Git 忽略，不属于公开源码。再次运行换新目录；脚本拒绝覆盖已有文件。
 
-## 3. 运行核心检查
-
-```sh
-python tools/run_tests.py --quick
-```
-
-它检查身份/资料边界、记录与发送、bot/共享模型资源的并发条件、共享开关、链接与凭据守卫，以及这个演示。运行器拒绝外部 socket 连接，只允许本地测试接口。
-
-接真实平台前，请继续读 [共享策略](sharing.md)、[当前限制](status.md) 和 `framework/factory/` 的空模板。配置身份、范围与凭据之后仍须独立验收。
+真实平台的共享前提、限制和空模板见 [共享策略](sharing.md)、[当前限制](status.md) 和 `framework/factory/`。配置身份、范围与凭据之后仍须独立验收。
