@@ -4,7 +4,7 @@ import json
 
 from .control import identifier
 from .policy import Denied
-from .references import excerpt_was_read
+from .references import excerpt_was_read, unique_excerpt
 from .retrieval import metadata, normalized
 
 
@@ -47,9 +47,7 @@ def validate(c,ctx,db,value):
         key=identifier(item['id']);revision=item['revision'];excerpt=item['quote']
         row,resource=c._document(db,key);policy.require_read(ctx,resource)
         body=c.version_bytes(db,row,revision).decode()
-        if not isinstance(excerpt,str) or not excerpt or len(excerpt)>8000 or body.count(excerpt)!=1:
-            raise Denied('对象对应需唯一匹配的短原文，不能用猜测代替依据。')
-        begin=body.index(excerpt)
+        begin=unique_excerpt(body,excerpt,'对象对应需唯一匹配的短原文，不能用猜测代替依据。')
         if not excerpt_was_read(db,ctx.task,key,revision,begin,begin+len(excerpt)):
             raise Denied('先实际读取对象对应的依据，再保存名称和别名。')
         sources.append({'id':key,'revision':revision,'quote':excerpt})
