@@ -1,5 +1,7 @@
 # Loom
 
+简体中文 · [English](README.en.md)
+
 [![License: Apache 2.0](docs/images/license-apache-2.0.svg)](LICENSE)
 
 给正在把 AI 放进真实团队的人参考的工作框架。它来自一套已经在用的工程，公开前做了脱敏。这里没有一键部署。想用的人拉取后按自己的团队改；我会继续维护这个仓库。
@@ -51,8 +53,6 @@
 
 自有内容采用 [Apache 2.0](LICENSE)。第三方材料保留各自条款，见 [NOTICE](NOTICE)。
 
-## English
+## 参与贡献
 
-Loom is a reference framework for putting AI to work inside a real team. The public repository is a desensitized production codebase, not an installable product. There is no one-click deploy. Pull it and adapt the seats, platform, and approval rules to your own team. The repository is actively maintained.
-
-Records sit in three layers: Data for sources and actions, CL for case history and citations, and Context for current understanding that has a source. Methods live in versioned skills. The host checks identity, permission, version, and delivery. The model decides what the content means.
+问题和改动都欢迎。请先看 [怎么参与](CONTRIBUTING.md)。
