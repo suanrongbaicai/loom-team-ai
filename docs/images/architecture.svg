@@ -39,7 +39,7 @@ text{font-family:system-ui,"Microsoft YaHei","PingFang SC",sans-serif;fill:#1c28
 <path class="line" d="M670 126 H776"/>
 <text x="723" y="112" text-anchor="middle" class="label">提案动作</text>
 <path class="line" d="M914 182 V228"/>
-<text x="978" y="214" class="label">读写都留痕</text>
+<text x="800" y="214" text-anchor="end" class="label">读写都留痕</text>
 
 <rect x="70" y="236" width="940" height="430" rx="18" fill="#f6f8fb" stroke="#c5d0e0" stroke-width="1.5" stroke-dasharray="7 6"/>
 <text x="540" y="274" text-anchor="middle" class="box-title">三层记录（按存成什么样分）</text>
@@ -47,17 +47,17 @@ text{font-family:system-ui,"Microsoft YaHei","PingFang SC",sans-serif;fill:#1c28
 <g transform="translate(100,296)">
 <rect width="880" height="96" rx="12" fill="#f4f8ff" stroke="#4c84e6" stroke-width="1.6"/>
 <text x="28" y="38" class="box-title">Context（认识）</text>
-<text x="28" y="68" class="sub">有来源的当前认识。写入要有依据，旧版本留下</text>
+<text x="28" y="68" class="sub">有来源的当前结论 · 改动走提案，真人表决，同事务生效</text>
 </g>
 <g transform="translate(100,408)">
 <rect width="880" height="96" rx="12" fill="#f3fbf6" stroke="#2f9e6b" stroke-width="1.6"/>
 <text x="28" y="38" class="box-title">CL（事项经过）</text>
-<text x="28" y="68" class="sub">逐段挂引用：资料、版本、引文。宿主核对原文和权限后才生成链接</text>
+<text x="28" y="68" class="sub">逐段挂引用：{资料ID, 版本, 引文} · 宿主核对原文与权限后才生成链接</text>
 </g>
 <g transform="translate(100,520)">
 <rect width="880" height="96" rx="12" fill="#fffaf0" stroke="#d89a1a" stroke-width="1.6"/>
 <text x="28" y="38" class="box-title">Data（原件）</text>
-<text x="28" y="68" class="sub">受保护保存的原始字节。链接不等于已经读到原件</text>
+<text x="28" y="68" class="sub">受保护保存的原始字节 · 链接不等于已读原件</text>
 </g>
 
 <path class="line" d="M540 666 V708"/>
