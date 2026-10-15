@@ -1,36 +1,35 @@
 # Loom
 
-[简体中文](README.md) · English
+> When you put an AI assistant into a team with real people, permissions, and responsibility, the hard part is not “can it run.” **What is this answer based on? Is it allowed to know this? Can next week pick up last week’s work? How do people approve a dangerous action?**
+>
+> LOOM is a framework already running in a real team, published with identifying details removed. Three record layers, a permission check on every citation, and proposal-and-vote answer those four questions.
 
-[![License: Apache 2.0](docs/images/license-apache-2.0.svg)](LICENSE)
-
-A reference framework for people putting AI to work inside a real team. It comes from a codebase already in use, with identifying details removed before publication. There is no one-click deploy. To use it, pull the repository and adapt it to your own team. This repository is actively maintained.
-
-A day later, or in another conversation, what was said, what was changed, and why it was done that way should still be findable. A reply is not done because the model says so. It needs a saved record and an actual delivery receipt.
-
-## Where records go
-
-The three layers are three drawers. They decide how something is stored. Knowledge kinds are labels on the content. They decide what kind of knowledge it is. The two do not replace each other.
-
-| Layer | What it stores |
-|---|---|
-| Data | Original messages, actual actions, and results |
-| CL | The course of one matter, and the material actually used each time |
-| Context | The current understanding, with a source |
-
-| Kind | Where it goes |
-|---|---|
-| Method | A skill, with a version. Something taught in conversation starts as a candidate and applies to everyone only after approval |
-| Decision | Context. A conclusion formed in a private chat can be shared to a group as that conclusion alone, after the person confirms |
-| Personal preference | Used only when replying to that person |
-| Volatile fact | Left at the source, with a date to check again |
-| In progress | Left in the course of the matter, not written into Context |
-
-The model decides what something means. The program checks identity, permission, version, and the actual action. A check that passes does not mean the understanding is correct.
+[简体中文](README.md) · English · [License: Apache 2.0](LICENSE)
 
 ## How one message moves
 
-![Loom architecture](docs/images/architecture.svg)
+![How one message moves](docs/images/architecture.svg)
+
+## The design
+
+- **Context**: the current understanding, with a source. Changing it needs a basis, and the old version stays. A conclusion formed in a private chat can be shared to a group as that conclusion alone, after the person confirms.
+- **CL**: the course of a matter, with a citation on each passage. The model names the material, version, and quote it actually used. The host checks permission and the original text before the link exists.
+- **Data**: the original bytes, kept with name, format, digest, source, and the scope in which they were obtained. A link is not the same as having read the original.
+- **Methods are skills**, with versions. Something taught in conversation starts as a candidate and applies to everyone only after approval.
+- **The model proposes a citation. The host checks it**: whether it was actually read this turn, who can see it, and whether the quote and version match.
+- **Permission and rule changes go through a proposal.** A person votes with their platform identity. When it passes, it takes effect in the same transaction. The model cannot vote, and it cannot make a rule take effect by itself.
+- **Platform identity is the real identity.** The sender of a Feishu or WeChat message decides who is speaking. The model does not get to declare that.
+
+## How to use this repository
+
+Use it as a reference and adapt it to your team. The seats, the connected platforms, and who approves changes come from the original team. Hand the repository to an AI and have it adapt `theory/` and `framework/`.
+
+| Directory | What is there |
+|---|---|
+| `theory/` | Why it is designed this way |
+| `framework/` | The current implementation: records, permissions, tasks, model adapters, Feishu and WeChat, delivery, and search |
+| `docs/` | Status, sharing, and limits. What is actually built is in [docs/status.md](docs/status.md) |
+| `examples/` | An offline synthetic demo of records and receipts |
 
 ## Videos
 
@@ -39,20 +38,22 @@ The model decides what something means. The program checks identity, permission,
 
 Names and data in the videos are synthetic.
 
-## How to use this repository
+## What it holds
 
-Use it as a reference, not as an installable package. The number of seats, the connected platforms, and who approves changes all come from the original team. Another team has to change those. There is no separate simple deploy procedure.
+- A reply is saved before it is sent. If delivery is uncertain, it stays unknown and is not resent under a new id.
+- A skill has three separate facts: the file exists, a version was approved, and that version is actually loaded.
+- The design lives in `theory/`. The implementation lives in `framework/`. A requirement written down is not the same as code that already does it.
 
-Hand the repository to an AI and have it adapt `theory/` and `framework/` to your team. Real identities, chats, configuration, and runtime data are not in this repository.
+## Who it is for
 
-| Directory | What is there |
-|---|---|
-| `theory/` | Why it is designed this way |
-| `framework/` | The current implementation |
-| `docs/` | Status, sharing premises, and limits |
+- People putting an AI assistant into a team and getting stuck on permission, evidence, and picking work up later
+- People building agent products who need citations and permissions
+- People studying how humans and AI share responsibility
 
-The project's own material is under the [Apache 2.0](LICENSE) license. Third-party material keeps its own terms. See [NOTICE](NOTICE).
+Real identities, chats, configuration, and secrets are not in this repository. The full WeChat adapter is installed separately.
 
 ## Contributing
 
 Issues and changes are welcome. Read [how to take part](CONTRIBUTING.md) first. That guide is in Chinese.
+
+The project's own material is under the [Apache 2.0](LICENSE) license. Third-party material keeps its own terms. See [NOTICE](NOTICE).
